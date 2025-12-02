@@ -1,5 +1,6 @@
 using System.Text;
 using FluentValidation;
+using identity_service.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,24 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
+});
+
+// Configure connection string
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+
+    // Si es producción, las variables de entorno serán sustituidas automáticamente
+    if (builder.Environment.IsProduction())
+    {
+        // Se pueden usar variables de entorno para sustituir los valores en la cadena de conexión
+        connectionString = connectionString.Replace("${DB_NAME}", Environment.GetEnvironmentVariable("DB_NAME"))
+                                             .Replace("${DB_USERNAME}", Environment.GetEnvironmentVariable("DB_USERNAME"))
+                                             .Replace("${DB_PASSWORD}", Environment.GetEnvironmentVariable("DB_PASSWORD"));
+    }
+    Console.WriteLine($"Connection string: {connectionString}");
+    options.UseNpgsql(connectionString);
 });
 
 
