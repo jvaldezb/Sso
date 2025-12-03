@@ -1,11 +1,17 @@
 using System.Text;
 using FluentValidation;
 using identity_service.Data;
+using identity_service.Dtos.AuthAuditLog;
+using identity_service.Dtos.Role;
+using identity_service.Dtos.SystemRegistry;
 using identity_service.Models;
 using identity_service.Repositories;
 using identity_service.Repositories.Interfaces;
 using identity_service.Services;
 using identity_service.Services.Interfaces;
+using identity_service.Validations.AuthAuditLog;
+using identity_service.Validations.Role;
+using identity_service.Validations.SystemRegistry;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -133,13 +139,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAutoMapper(typeof(Program));
 
 // Validators
+builder.Services.AddScoped<IValidator<AuthAuditLogForCreateDto>, AuthAuditLogForCreateValidator>();
+builder.Services.AddScoped<IValidator<CreateRoleDto>, CreateRoleValidator>();
+builder.Services.AddScoped<IValidator<UpdateRoleDto>, UpdateRoleValidator>();
+builder.Services.AddScoped<IValidator<CreateSystemRegistryDto>, CreateSystemRegistryValidator>();
+builder.Services.AddScoped<IValidator<UpdateSystemRegistryDto>, UpdateSystemRegistryValidator>();
 
 // Repositories
 builder.Services.AddScoped<IAuthAuditLogRepository, AuthAuditLogRepository>();
 builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddScoped<IMenuRepository, MenuRepository>();
 builder.Services.AddScoped<ISystemRegistryRepository, SystemRegistryRepository>();
-
 
 // Services
 builder.Services.AddScoped<IUserService, UserService>();
