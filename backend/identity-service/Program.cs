@@ -1,6 +1,11 @@
 using System.Text;
 using FluentValidation;
 using identity_service.Data;
+using identity_service.Models;
+using identity_service.Repositories;
+using identity_service.Repositories.Interfaces;
+using identity_service.Services;
+using identity_service.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -92,6 +97,15 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
+// Configurar el identity framework
+builder.Services.AddIdentityCore<ApplicationUser>()
+    .AddRoles<ApplicationRole>()
+    .AddEntityFrameworkStores<AppDbContext>();
+
+// Add SignInManager and UserManager explicitly for dependency injection
+builder.Services.AddScoped<SignInManager<ApplicationUser>>();
+builder.Services.AddScoped<UserManager<ApplicationUser>>();
+builder.Services.AddScoped<RoleManager<ApplicationRole>>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -116,12 +130,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Inyección de dependencias
 
 // Mappers
+builder.Services.AddAutoMapper(typeof(Program));
 
 // Validators
 
 // Repositories
+builder.Services.AddScoped<IAuthAuditLogRepository, AuthAuditLogRepository>();
+builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+builder.Services.AddScoped<IMenuRepository, MenuRepository>();
+builder.Services.AddScoped<ISystemRegistryRepository, SystemRegistryRepository>();
+
 
 // Services
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IMenuRepository, MenuRepository>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IAuthAuditLogService, AuthAuditLogService>();
+builder.Services.AddScoped<ISystemRegistryService, SystemRegistryService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 
 var app = builder.Build();
 

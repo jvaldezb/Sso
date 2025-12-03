@@ -1,0 +1,42 @@
+using System;
+using identity_service.Dtos;
+using identity_service.Dtos.User;
+using identity_service.Dtos.UserSession;
+
+namespace identity_service.Services.Interfaces;
+
+public interface IUserService
+{
+    public Task<Result<UserResponseDto>> registerAsync(UserForCreateDto loginDto); 
+    public Task<PaginatedList<UserResponseDto>> GetUsersAsync(int pageNumber, int pageSize);
+    public Task<Result<AccessTokenDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip);    
+    public Task<Result<AccessTokenDto>> loginEmailAsync(LoginEmailDto loginEmailDto, string device, string? ip);
+    public Task<(string token, DateTime expires)> GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip);
+
+    public Task<Result<bool>> ValidateTokenAsync(string token);
+    public Task<Result<bool>> LogoutAsync(string userId, string? jwtId, string? ip, string? device);
+    public Task<Result<IEnumerable<UserSessionDto>>> GetActiveSessionsAsync(string userId);
+    public Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
+
+    // Email Verification Methods
+    public Task<Result<VerificationCodeResponseDto>> SendVerificationEmailAsync(string email);
+    public Task<Result<EmailVerificationResponseDto>> VerifyEmailAsync(string email, string verificationCode);
+    public Task<Result<bool>> IsEmailVerifiedAsync(string userId);
+    public Task<Result<bool>> ResendVerificationEmailAsync(string email);
+
+    // Two-Factor Authentication (MFA) Methods
+    public Task<Result<MfaSetupResponseDto>> GenerateMfaSecretAsync(string userId);
+    public Task<Result<MfaVerificationResponseDto>> VerifyMfaSetupAsync(string userId, string code);
+    public Task<Result<MfaStatusResponseDto>> GetMfaStatusAsync(string userId);
+    public Task<Result<bool>> DisableMfaAsync(string userId);
+    public Task<Result<bool>> ValidateMfaCodeAsync(string userId, string code);
+
+    // =====================================================================
+    // Obtener usuario actual
+    // =====================================================================    
+    public Task<Result<MeResponseDto>> GetCurrentUserAsync(string userId);
+
+    // Enable/Disable user
+    public Task<Result<bool>> SetUserEnabledAsync(string performedByUserId, string userId, bool enabled);
+}
+
