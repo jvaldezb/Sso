@@ -1,0 +1,35 @@
+# Build
+bin/
+obj/
+TestResults/
+
+# User-specific
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VSCode
+.vscode/
+.history/
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Dotnet artifacts
+*.dll
+*.pdb
+*.cache
+*.db
+
+# Rider / JetBrains
+.idea/
+
+# Docker
+*.pid
+.env
