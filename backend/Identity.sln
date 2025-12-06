@@ -4,7 +4,7 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "identity-service", "identity-service\identity-service.csproj", "{8B603A9E-5519-CA81-0053-A16833B68D62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "identity-service.tests", "identity-service.tests\identity-service.tests.csproj", "{E51AB393-C0D6-4AF7-9EE1-436F83F5C97F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "identity-service.UnitTests", "identity-service.UnitTests\identity-service.UnitTests.csproj", "{E51AB393-C0D6-4AF7-9EE1-436F83F5C97F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

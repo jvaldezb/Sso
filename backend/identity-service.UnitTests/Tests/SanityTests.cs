@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace IdentityService.Tests;
+namespace identity_service.UnitTests;
 
 public class SanityTests
 {
