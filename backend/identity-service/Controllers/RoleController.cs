@@ -256,7 +256,7 @@ public class RoleController : ControllerBase
 
     #region Enable/Disable Role
 
-    [HttpPost("{roleId}/enable")]
+    [HttpPatch("{roleId}/enable")]
     public async Task<IActionResult> EnableRole(string roleId)
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -270,7 +270,7 @@ public class RoleController : ControllerBase
         return Ok(new { message = "Role habilitado correctamente" });
     }
 
-    [HttpPost("{roleId}/disable")]
+    [HttpPatch("{roleId}/disable")]
     public async Task<IActionResult> DisableRole(string roleId)
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);

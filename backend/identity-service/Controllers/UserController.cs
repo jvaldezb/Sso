@@ -61,7 +61,7 @@ public class UserController : ControllerBase
     }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [HttpPost("{userId}/enable")]
+    [HttpPatch("{userId}/enable")]
     public async Task<IActionResult> EnableUser(string userId)
     {
         var performedByUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -76,7 +76,7 @@ public class UserController : ControllerBase
     }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [HttpPost("{userId}/disable")]
+    [HttpPatch("{userId}/disable")]
     public async Task<IActionResult> DisableUser(string userId)
     {
         var performedByUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);

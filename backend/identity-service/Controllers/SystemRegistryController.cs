@@ -122,7 +122,7 @@ public class SystemRegistryController : ControllerBase
     /// <summary>
     /// Enable a system registry
     /// </summary>
-    [HttpPost("{id}/enable")]
+    [HttpPatch("{id}/enable")]
     public async Task<IActionResult> Enable(Guid id)
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -139,7 +139,7 @@ public class SystemRegistryController : ControllerBase
     /// <summary>
     /// Disable a system registry
     /// </summary>
-    [HttpPost("{id}/disable")]
+    [HttpPatch("{id}/disable")]
     public async Task<IActionResult> Disable(Guid id)
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
