@@ -16,6 +16,7 @@ public class Menu : EntityBase
     public string? AccessScope { get; set; }
     public short OrderIndex { get; set; } = 1; 
     public int? BitPosition { get; set; }
+    public string? Url { get; set; }
 
     public virtual Menu? ParentMenu { get; set; }
     public virtual ICollection<Menu>? ChildMenus { get; set; }
