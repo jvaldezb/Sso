@@ -33,3 +33,6 @@ packages/
 # Docker
 *.pid
 .env
+
+# Archivos de seeds o datos de prueba que NO deben ir a Git
+backend/migrations/V2__seed.sql
