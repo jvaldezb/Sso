@@ -20,6 +20,7 @@ public class RoleService : IRoleService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
     private readonly IMenuRepository _menuRepository;
+    private readonly IRoleClaimEncoderService _roleClaimEncoderService;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateRoleDto> _createValidator;
     private readonly IValidator<UpdateRoleDto> _updateValidator;
@@ -31,7 +32,8 @@ public class RoleService : IRoleService
         IMenuRepository menuRepository,
         IMapper mapper,
         IValidator<CreateRoleDto> createValidator,
-        IValidator<UpdateRoleDto> updateValidator)
+        IValidator<UpdateRoleDto> updateValidator,
+        IRoleClaimEncoderService roleClaimEncoderService)
     {
         _roleManager = roleManager;
         _userManager = userManager;
@@ -40,6 +42,7 @@ public class RoleService : IRoleService
         _mapper = mapper;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _roleClaimEncoderService = roleClaimEncoderService;
     }
 
     #region Role Management
@@ -489,6 +492,134 @@ public class RoleService : IRoleService
         catch (Exception ex)
         {
             return Result<List<MenuDto>>.Failure($"Error retrieving allowed menus: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<List<MenuRoleRwxResponseDto>>> GetRoleMenusAsync(string roleId)
+    {
+        try
+        {
+            var role = await _roleManager.FindByIdAsync(roleId);
+            if (role == null)
+                return Result<List<MenuRoleRwxResponseDto>>.Failure("Role not found");
+
+            var systemRegistry = await _context.SystemRegistries
+                .AsNoTracking() 
+                .FirstOrDefaultAsync(s => s.Id == role.SystemId);    
+            if (systemRegistry == null)
+                return Result<List<MenuRoleRwxResponseDto>>.Failure("System registry not found for the role");
+
+            var claimType = $"Access:{systemRegistry.SystemCode}";
+
+            var claims = await _roleManager.GetClaimsAsync(role);
+            var menuClaims = claims.FirstOrDefault(c => c.Type == claimType);
+
+            if (menuClaims == null)
+                return Result<List<MenuRoleRwxResponseDto>>.Success(new List<MenuRoleRwxResponseDto>());
+
+            // AHORA haz la consulta a la base de datos
+            var menusByRole = await _context.Menus
+                .AsNoTracking() 
+                .Where(m => m.SystemId == systemRegistry.Id)
+                .ToListAsync();            
+
+            var menusDtosWithBitPosition = _mapper.Map<List<MenuRoleBitPositionDto>>(menusByRole.Where(m => m.BitPosition != null && !string.IsNullOrEmpty(m.Module)).ToList());
+
+            // DECODIFICA PRIMERO antes de hacer otra consulta
+            var decodedPermissions = await _roleClaimEncoderService.DecodeAsync(menusDtosWithBitPosition, menuClaims.Value);            
+
+            var menusDtoByRole = _mapper.Map<List<MenuRoleRwxResponseDto>>(menusByRole);
+            
+            // Merge decoded permissions into full menu list
+            foreach (var menu in menusDtoByRole)
+            {
+                var decodedMenu = decodedPermissions.FirstOrDefault(m => m.Id == menu.Id);
+                if (decodedMenu != null)
+                {
+                    menu.RwxValue = decodedMenu.RwxValue;
+                }
+            }
+
+            return Result<List<MenuRoleRwxResponseDto>>.Success(menusDtoByRole);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<MenuRoleRwxResponseDto>>.Failure($"Error retrieving role menus: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<bool>> SetRoleMenusAsync(string performedByUserId, string roleId, List<MenuRoleRwxRequestDto> menus)
+    {
+        try
+        {
+            var role = await _roleManager.FindByIdAsync(roleId);
+            if (role == null)
+                return Result<bool>.Failure("Role not found");
+
+            var systemRegistry = await _context.SystemRegistries
+                .AsNoTracking() 
+                .FirstOrDefaultAsync(s => s.Id == role.SystemId);    
+
+            if (systemRegistry == null)
+                return Result<bool>.Failure("System registry not found for the role");
+
+            var claimType = $"Access:{systemRegistry.SystemCode}";
+
+            // ENCODE los permisos primero
+            var menusDtos = _mapper.Map<List<MenuRoleRwxDto>>(menus);
+
+            // 1. EXTRAER los IDs de los menús que queremos buscar
+            var menuIds = menus.Select(m => m.Id).ToList();
+
+            // obtener bit positions desde la base de datos
+            var menusFromDb = await _context.Menus
+                .AsNoTracking() 
+                .Where(m => m.SystemId == systemRegistry.Id && menuIds.Contains(m.Id)) 
+                .ToListAsync();
+            
+            foreach (var menuDto in menusDtos)
+            {
+                var menuInDb = menusFromDb.FirstOrDefault(m => m.Id == menuDto.Id);
+                if (menuInDb != null)
+                {
+                    menuDto.BitPosition = menuInDb.BitPosition;
+                }
+            }
+
+            var encodedValue = await _roleClaimEncoderService.EncodeAsync(menusDtos.Where(m => m.RwxValue.HasValue).ToList());
+
+            // Ahora actualiza o crea el claim
+            var existingClaims = await _roleManager.GetClaimsAsync(role);
+            var menuClaim = existingClaims.FirstOrDefault(c => c.Type == claimType);
+
+            IdentityResult result;
+            if (menuClaim != null)
+            {
+                // Remove old claim and add new one
+                var removeResult = await _roleManager.RemoveClaimAsync(role, menuClaim);
+                if (!removeResult.Succeeded)
+                    return Result<bool>.Failure(string.Join(", ", removeResult.Errors.Select(e => e.Description)));
+
+                var newClaim = new Claim(claimType, encodedValue.ToString());
+                result = await _roleManager.AddClaimAsync(role, newClaim);
+            }
+            else
+            {
+                // Add new claim
+                var newClaim = new Claim(claimType, encodedValue.ToString());
+                result = await _roleManager.AddClaimAsync(role, newClaim);
+            }
+
+            if (!result.Succeeded)
+                return Result<bool>.Failure(string.Join(", ", result.Errors.Select(e => e.Description)));
+
+            await RecordRoleAuditAsync("SET_ROLE_MENUS", performedByUserId, new { RoleId = roleId, EncodedValue = encodedValue.ToString() });
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return Result<bool>.Failure($"Error setting role menus: {ex.Message}");
         }
     }
 

@@ -158,6 +158,8 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthAuditLogService, AuthAuditLogService>();
 builder.Services.AddScoped<ISystemRegistryService, SystemRegistryService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+// Role claim encoder service (encodes/decodes compressed permissions using Menu.BitPosition)
+builder.Services.AddScoped<IRoleClaimEncoderService, RoleClaimEncoderService>();
 
 
 var app = builder.Build();

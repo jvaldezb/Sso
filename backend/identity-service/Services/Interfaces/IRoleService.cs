@@ -26,6 +26,8 @@ public interface IRoleService
     // Menu integration & access
     Task<Result<bool>> UserHasAccessToMenuAsync(string userId, Guid menuId);
     Task<Result<List<MenuDto>>> GetAllowedMenusAsync(string userId);
+    Task<Result<List<MenuRoleRwxResponseDto>>> GetRoleMenusAsync(string roleId);
+    Task<Result<bool>> SetRoleMenusAsync(string performedByUserId, string roleId, List<MenuRoleRwxRequestDto> menus);
 
     // Audit
     Task<Result<bool>> RecordRoleAuditAsync(string action, string performedByUserId, object details);

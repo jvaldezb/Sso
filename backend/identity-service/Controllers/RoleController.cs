@@ -252,6 +252,42 @@ public class RoleController : ControllerBase
         return Ok(result.Data);
     }
 
+    /// <summary>
+    /// Get all menus a role grants access to
+    /// </summary>
+    /// <param name="roleId"></param>
+    /// <returns></returns>
+    [HttpGet("{roleId}/menus")]    
+    public async Task<IActionResult> GetRoleMenus(string roleId)
+    {
+        var result = await _roleService.GetRoleMenusAsync(roleId);
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+        return Ok(result.Data);
+    }
+
+    /// <summary>
+    /// Set access menus for a role
+    /// </summary>
+    /// <param name="roleId"></param>
+    /// <returns></returns>
+    [HttpPatch("{roleId}/menus")]
+    public async Task<IActionResult> SetRoleMenus(string roleId, [FromBody] List<MenuRoleRwxRequestDto> menus)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Unauthorized("Token inválido");
+
+        var result = await _roleService.SetRoleMenusAsync(userId, roleId, menus);
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+
+        return Ok(new { message = "Menus del role actualizados correctamente." });
+    }
+
     #endregion
 
     #region Enable/Disable Role
