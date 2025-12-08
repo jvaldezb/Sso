@@ -19,7 +19,7 @@ public class SystemRegistryService : ISystemRegistryService
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateSystemRegistryDto> _createValidator;
-    private readonly IValidator<UpdateSystemRegistryDto> _updateValidator;
+    private readonly IValidator<UpdateSystemRegistryDto> _updateValidator;    
     private readonly UserManager<ApplicationUser> _userManager;
 
     public SystemRegistryService(
@@ -35,7 +35,7 @@ public class SystemRegistryService : ISystemRegistryService
         _mapper = mapper;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
-        _userManager = userManager;
+        _userManager = userManager;        
     }
 
     public async Task<Result<SystemRegistryDto>> CreateAsync(string performedByUserId, CreateSystemRegistryDto dto)
@@ -243,6 +243,41 @@ public class SystemRegistryService : ISystemRegistryService
         catch (Exception ex)
         {
             return Result<bool>.Failure($"Error updating system registry enabled flag: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<bool>> UpdateApiKeyAsync(string performedByUserId, Guid id, string apiKey)    
+    {        
+        try
+        {
+            // Validate ApiKey
+            if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Length < 32)
+                return Result<bool>.Failure("El ApiKey no es válido. Debe tener al menos 32 caracteres.");
+
+            var system = _context.SystemRegistries.FirstOrDefault(s => s.Id == id);
+            if (system == null)
+                return Result<bool>.Failure("System registry not found.");
+
+            system.ApiKey = apiKey;
+            system.UserUpdate = performedByUserId;
+            system.DateUpdate = DateTime.UtcNow;
+
+            _context.SystemRegistries.Update(system);
+            _context.SaveChanges();
+
+            await RecordSystemRegistryAuditAsync("UPDATE_API_KEY", performedByUserId,
+                new
+                {
+                    SystemRegistryId = id,
+                    SystemCode = system.SystemCode,
+                    NewApiKey = apiKey
+                });
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return Result<bool>.Failure($"Error updating API key: {ex.Message}");
         }
     }
 

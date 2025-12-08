@@ -9,5 +9,6 @@ public record UpdateSystemRegistryDto(
     string BaseUrl,
     string? IconUrl,    
     string? Category,
-    string? ContactEmail
+    string? ContactEmail,
+    string? ApiKey
 );

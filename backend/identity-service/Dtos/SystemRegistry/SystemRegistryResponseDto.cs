@@ -11,5 +11,6 @@ public class SystemRegistryResponseDto
     public string BaseUrl { get; set; } = default!;
     public string? IconUrl { get; set; }    
     public string? Category { get; set; }
+    public string? ApiKey { get; set; }
     public string? ContactEmail { get; set; }    
 }

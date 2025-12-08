@@ -14,6 +14,7 @@ public class SystemRegistryDto
     public string? Category { get; set; }
     public string? ContactEmail { get; set; }
     public bool IsCentralAdmin { get; set; }
+    public string? ApiKey { get; set; }
     public DateTimeOffset? LastSync { get; set; }
     public string? UserCreate { get; set; }
     public string? UserUpdate { get; set; }

@@ -1,6 +1,7 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using identity_service.Dtos.SystemRegistry;
 using identity_service.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -151,5 +152,35 @@ public class SystemRegistryController : ControllerBase
             return BadRequest(result.ErrorMessage);
 
         return Ok(new { message = "Sistema deshabilitado correctamente." });
+    }
+
+    /// <summary>
+    /// Generate a new API key
+    /// </summary>
+    [HttpPost("generate-key")]
+    public IActionResult GenerateApiKey()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(32);
+        var apiKey = Convert.ToHexString(bytes); // 64 chars HEX
+
+        return Ok(new { apiKey });
+    }
+
+    /// <summary>
+    /// Update API key for a system registry
+    /// </summary>
+    [HttpPatch("{id}/update-api-key")]
+    public async Task<IActionResult> UpdateApiKey(Guid id, string apiKey)
+    {
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Unauthorized("Token inválido");
+
+        var result = await _systemRegistryService.UpdateApiKeyAsync(userId, id, apiKey);
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+
+        return Ok(new { message = "API key actualizada correctamente." });
+        
     }
 }

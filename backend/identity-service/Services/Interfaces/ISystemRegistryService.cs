@@ -14,4 +14,5 @@ public interface ISystemRegistryService
     Task<Result<SystemRegistryDto>> GetByCodeAsync(string systemCode);
     Task<PaginatedList<SystemRegistryDto>> GetByCodesAsync(IEnumerable<string> systemCodes);
     Task<Result<bool>> SetEnabledAsync(string performedByUserId, Guid id, bool enabled);
+    Task<Result<bool>> UpdateApiKeyAsync(string performedByUserId, Guid id, string apiKey);
 }
