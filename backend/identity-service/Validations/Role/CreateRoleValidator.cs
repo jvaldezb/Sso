@@ -12,8 +12,8 @@ public class CreateRoleValidator : AbstractValidator<CreateRoleDto>
             .NotEmpty().WithMessage("Name is required.")
             .Length(2, 100).WithMessage("Name must be between 2 and 100 characters.");
 
+        // no puede ser vacio    
         RuleFor(x => x.SystemId)
-            .GreaterThanOrEqualTo(0).When(x => x.SystemId.HasValue)
-            .WithMessage("SystemId, if provided, must be greater or equal to 0.");
+            .NotEmpty().WithMessage("SystemId is required.");
     }
 }
