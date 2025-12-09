@@ -189,6 +189,98 @@ public class UserService : IUserService
         });
     }
 
+    public async Task<Result<AccessTokenDto>> LoginDocumentSystemAsync(LoginDocumentSystemDto dto, string device, string? ip)
+    {
+        // 1. Validar que existe el sistema
+        var systems = await _context.SystemRegistries.Where(x => x.SystemCode == dto.SystemCode).ToListAsync();
+        if (systems.Count == 0)
+            return Result<AccessTokenDto>.Failure("Código de sistema no válido.");
+
+        // 2. Validar que es la apikey coincide con el del sistema
+        var system = systems.First();
+        if (system.ApiKey != dto.ApiKey)
+            return Result<AccessTokenDto>.Failure("Apikey de sistema no válido.");    
+
+        // 1. Buscar usuario por tipo + número de documento
+        var user = await _userManager.Users
+            .FirstOrDefaultAsync(u =>
+                u.DocumentType == dto.DocumentType &&
+                u.DocumentNumber == dto.DocumentNumber);
+
+        if (user == null)
+            return Result<AccessTokenDto>.Failure("Invalid credentials");
+
+        // 2. Validate password directly (API uses JWTs, avoid cookie sign-in handlers)
+        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+        if (!passwordValid)
+        {
+            return Result<AccessTokenDto>.Failure("Invalid credentials");
+        }
+
+        // 3. Obtener roles del usuario
+        var userRoles = await _userManager.GetRolesAsync(user);
+        var roles = await _roleManager.Roles
+            .Where(r => userRoles.Contains(r.Name!))
+            .Where(r => r.SystemId == system.Id)
+            .ToListAsync();
+
+        var roleCodesForSystem = roles
+            .OfType<ApplicationRole>()
+            .Select(r => r.Name!)
+            .ToList();
+
+        var applicationRoles = roles
+            .OfType<ApplicationRole>()
+            .ToList();        
+        
+        var systemsIds = systems.Select(s => s.Id).ToList();
+
+        var systemCodes = systems.Select(s => s.SystemCode).ToList();
+
+        // 5. Generar token JWT (igual que en loginEmailAsync)
+        var (token, jti) = GenerateJwtTokenCentral(user, "session", systemCodes, "global", 60);
+
+        //GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip)        
+        var (tokenB, jtiB) = GenerateJwtTokenSystem(user, roleCodesForSystem, "access", system.SystemCode, "access" ?? "read", 10);
+
+        // 6. Registrar la sesión del usuario
+        var session = new UserSession
+        {
+            UserId = user.Id,
+            JwtId = jti,
+            TokenType = "session",
+            SystemName = "SSO-CENTRAL",
+            Device = device.Length > 500 ? device.Substring(0, 500) : device,
+            IpAddress = ip,
+            IssuedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            Audience = "sso-central",
+            Scope = "global"
+        };
+
+        await _userSessionRepository.AddAsync(session);
+
+        // 7. Retornar token + fecha de expiración
+        return Result<AccessTokenDto>.Success(new AccessTokenDto
+        {
+            UserId = user.Id,
+            FullName = user.FullName!,
+            Token = tokenB,
+            Expires = session.ExpiresAt, 
+            Systems = systems.Select(sr => new SystemRegistryResponseDto
+            {
+                Id = sr.Id,
+                SystemCode = sr.SystemCode,
+                SystemName = sr.SystemName,
+                Description = sr.Description,
+                BaseUrl = sr.BaseUrl,
+                IconUrl = sr.IconUrl,
+                Category = sr.Category,
+                ContactEmail = sr.ContactEmail
+            }).ToList()
+        });
+    }
+
     public async Task<Result<AccessTokenDto>> loginEmailAsync(LoginEmailDto loginEmailDto, string device, string? ip)
     {
         var user = await _userManager.FindByEmailAsync(loginEmailDto.Email);

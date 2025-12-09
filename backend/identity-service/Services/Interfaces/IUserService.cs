@@ -9,7 +9,8 @@ public interface IUserService
 {
     public Task<Result<UserResponseDto>> registerAsync(UserForCreateDto loginDto); 
     public Task<PaginatedList<UserResponseDto>> GetUsersAsync(int pageNumber, int pageSize);
-    public Task<Result<AccessTokenDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip);    
+    public Task<Result<AccessTokenDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip);
+    public Task<Result<AccessTokenDto>> LoginDocumentSystemAsync(LoginDocumentSystemDto dto, string device, string? ip);
     public Task<Result<AccessTokenDto>> loginEmailAsync(LoginEmailDto loginEmailDto, string device, string? ip);
     public Task<(string token, DateTime expires)> GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip);
 

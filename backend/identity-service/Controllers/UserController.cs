@@ -46,6 +46,19 @@ public class UserController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("login-document-system")]
+    public async Task<IActionResult> LoginDocumentSystem(LoginDocumentSystemDto dto)
+    {
+        var device = Request.Headers["User-Agent"].ToString();
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var result = await _userService.LoginDocumentSystemAsync(dto, device, ip);
+        if (!result.IsSuccess)
+        {
+            return Unauthorized(result.ErrorMessage);
+        }
+        return Ok(result);
+    }
+
     [HttpPost("login-email")]
     public async Task<IActionResult> LoginEmail(LoginEmailDto loginEmailDto)
     {
