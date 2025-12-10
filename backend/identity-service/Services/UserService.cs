@@ -7,6 +7,7 @@ using System.Text.Json;
 using AutoMapper;
 using identity_service.Data;
 using identity_service.Dtos;
+using identity_service.Dtos.RefreshToken;
 using identity_service.Dtos.SystemRegistry;
 using identity_service.Dtos.User;
 using identity_service.Dtos.UserSession;
@@ -29,6 +30,8 @@ public class UserService : IUserService
     private readonly AppDbContext _context;
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IEmailService _emailService;
+    private readonly IRefreshTokenService _refreshTokenService;
+    private readonly ITokenGenerator _tokenGenerator;
 
     public UserService(
         UserManager<ApplicationUser> userManager,
@@ -38,7 +41,9 @@ public class UserService : IUserService
         IEmailService emailService,
         SignInManager<ApplicationUser> signInManager,
         RoleManager<ApplicationRole> roleManager,
-        IMapper mapper)
+        IMapper mapper,
+        IRefreshTokenService refreshTokenService,
+        ITokenGenerator tokenGenerator)
     {
         _userManager = userManager;
         _configuration = configuration;
@@ -48,6 +53,8 @@ public class UserService : IUserService
         _signInManager = signInManager;
         _roleManager = roleManager;
         _mapper = mapper;
+        _refreshTokenService = refreshTokenService;
+        _tokenGenerator = tokenGenerator;
     }
 
     public async Task<Result<UserResponseDto>> registerAsync(UserForCreateDto userDto)
@@ -97,270 +104,6 @@ public class UserService : IUserService
         return new PaginatedList<UserResponseDto>(userDtos, totalCount, pageNumber, pageSize);
     }
 
-    public async Task<Result<AccessTokenDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip)
-    {
-        // 1. Buscar usuario por tipo + número de documento
-        var user = await _userManager.Users
-            .FirstOrDefaultAsync(u =>
-                u.DocumentType == dto.DocumentType &&
-                u.DocumentNumber == dto.DocumentNumber);
-
-        if (user == null)
-            return Result<AccessTokenDto>.Failure("Invalid credentials");
-
-        // 2. Validate password directly (API uses JWTs, avoid cookie sign-in handlers)
-        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
-        if (!passwordValid)
-        {
-            return Result<AccessTokenDto>.Failure("Invalid credentials");
-        }
-
-        // 3. Obtener roles del usuario
-        var userRoles = await _userManager.GetRolesAsync(user);
-        var roles = await _roleManager.Roles
-            .Where(r => userRoles.Contains(r.Name!))
-            .ToListAsync();
-
-        var applicationRoles = roles
-            .OfType<ApplicationRole>()
-            .ToList();
-        
-        // 4. Obtener sistemas por roles asignados
-        var systemIds = applicationRoles
-            .Select(r => r.SystemId)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .ToList();
-
-        List<string> systems;
-        var listSystemsRegistry = await _context.SystemRegistries
-                .Where(sr => systemIds.Contains(sr.Id))
-                .ToListAsync();
-
-        if (!systemIds.Any())
-        {
-            systems = new List<string>();
-        }
-        else
-        {
-            systems = await _context.SystemRegistries
-                .Where(sr => systemIds.Contains(sr.Id))
-                .Select(sr => sr.SystemCode)
-                .ToListAsync();
-        }
-
-        // 5. Generar token JWT (igual que en loginEmailAsync)
-        var (token, jti) = GenerateJwtTokenCentral(user, "session", systems, "global", 60);
-
-        // 6. Registrar la sesión del usuario
-        var session = new UserSession
-        {
-            UserId = user.Id,
-            JwtId = jti,
-            TokenType = "session",
-            SystemName = "SSO-CENTRAL",
-            Device = device.Length > 500 ? device.Substring(0, 500) : device,
-            IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            Audience = "sso-central",
-            Scope = "global"
-        };
-
-        await _userSessionRepository.AddAsync(session);
-
-        // 7. Retornar token + fecha de expiración
-        return Result<AccessTokenDto>.Success(new AccessTokenDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName!,
-            Token = token,
-            Expires = session.ExpiresAt, Systems = listSystemsRegistry.Select(sr => new SystemRegistryResponseDto
-            {
-                Id = sr.Id,
-                SystemCode = sr.SystemCode,
-                SystemName = sr.SystemName,
-                Description = sr.Description,
-                BaseUrl = sr.BaseUrl,
-                IconUrl = sr.IconUrl,
-                Category = sr.Category,
-                ContactEmail = sr.ContactEmail
-            }).ToList()
-        });
-    }
-
-    public async Task<Result<AccessTokenDto>> LoginDocumentSystemAsync(LoginDocumentSystemDto dto, string device, string? ip)
-    {
-        // 1. Validar que existe el sistema
-        var systems = await _context.SystemRegistries.Where(x => x.SystemCode == dto.SystemCode).ToListAsync();
-        if (systems.Count == 0)
-            return Result<AccessTokenDto>.Failure("Código de sistema no válido.");
-
-        // 2. Validar que es la apikey coincide con el del sistema
-        var system = systems.First();
-        if (system.ApiKey != dto.ApiKey)
-            return Result<AccessTokenDto>.Failure("Apikey de sistema no válido.");    
-
-        // 1. Buscar usuario por tipo + número de documento
-        var user = await _userManager.Users
-            .FirstOrDefaultAsync(u =>
-                u.DocumentType == dto.DocumentType &&
-                u.DocumentNumber == dto.DocumentNumber);
-
-        if (user == null)
-            return Result<AccessTokenDto>.Failure("Invalid credentials");
-
-        // 2. Validate password directly (API uses JWTs, avoid cookie sign-in handlers)
-        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
-        if (!passwordValid)
-        {
-            return Result<AccessTokenDto>.Failure("Invalid credentials");
-        }
-
-        // 3. Obtener roles del usuario
-        var userRoles = await _userManager.GetRolesAsync(user);
-        var roles = await _roleManager.Roles
-            .Where(r => userRoles.Contains(r.Name!))
-            .Where(r => r.SystemId == system.Id)
-            .ToListAsync();
-
-        var roleCodesForSystem = roles
-            .OfType<ApplicationRole>()
-            .Select(r => r.Name!)
-            .ToList();
-
-        var applicationRoles = roles
-            .OfType<ApplicationRole>()
-            .ToList();        
-        
-        var systemsIds = systems.Select(s => s.Id).ToList();
-
-        var systemCodes = systems.Select(s => s.SystemCode).ToList();
-
-        // 5. Generar token JWT (igual que en loginEmailAsync)
-        var (token, jti) = GenerateJwtTokenCentral(user, "session", systemCodes, "global", 60);
-
-        //GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip)        
-        var (tokenB, jtiB) = GenerateJwtTokenSystem(user, roleCodesForSystem, "access", system.SystemCode, "access" ?? "read", 10);
-
-        // 6. Registrar la sesión del usuario
-        var session = new UserSession
-        {
-            UserId = user.Id,
-            JwtId = jti,
-            TokenType = "session",
-            SystemName = "SSO-CENTRAL",
-            Device = device.Length > 500 ? device.Substring(0, 500) : device,
-            IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            Audience = "sso-central",
-            Scope = "global"
-        };
-
-        await _userSessionRepository.AddAsync(session);
-
-        // 7. Retornar token + fecha de expiración
-        return Result<AccessTokenDto>.Success(new AccessTokenDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName!,
-            Token = tokenB,
-            Expires = session.ExpiresAt, 
-            Systems = systems.Select(sr => new SystemRegistryResponseDto
-            {
-                Id = sr.Id,
-                SystemCode = sr.SystemCode,
-                SystemName = sr.SystemName,
-                Description = sr.Description,
-                BaseUrl = sr.BaseUrl,
-                IconUrl = sr.IconUrl,
-                Category = sr.Category,
-                ContactEmail = sr.ContactEmail
-            }).ToList()
-        });
-    }
-
-    public async Task<Result<AccessTokenDto>> loginEmailAsync(LoginEmailDto loginEmailDto, string device, string? ip)
-    {
-        var user = await _userManager.FindByEmailAsync(loginEmailDto.Email);
-        if (user == null || !await _userManager.CheckPasswordAsync(user, loginEmailDto.Password))
-            return Result<AccessTokenDto>.Failure("Invalid credentials");
-
-        // 3. Obtener roles del usuario
-        var userRoles = await _userManager.GetRolesAsync(user);
-        var roles = await _roleManager.Roles
-            .Where(r => userRoles.Contains(r.Name!))
-            .ToListAsync();
-
-        var applicationRoles = roles
-            .OfType<ApplicationRole>()
-            .ToList();
-        
-        // 4. Obtener sistemas por roles asignados
-        var systemIds = applicationRoles
-            .Select(r => r.SystemId)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .ToList();
-
-        List<string> systems;
-        var listSystemsRegistry = await _context.SystemRegistries
-                .Where(sr => systemIds.Contains(sr.Id))
-                .ToListAsync();
-
-        if (!systemIds.Any())
-        {
-            systems = new List<string>();
-        }
-        else
-        {
-            systems = await _context.SystemRegistries
-                .Where(sr => systemIds.Contains(sr.Id))
-                .Select(sr => sr.SystemCode)
-                .ToListAsync();
-        }
-
-        var (token, jti) = GenerateJwtTokenCentral(user, "session", systems, "global", 60);
-
-        var session = new UserSession
-        {
-            UserId = user.Id,
-            JwtId = jti,
-            TokenType = "session",
-            SystemName = "SSO-CENTRAL",
-            Device = device,
-            IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            Audience = "sso-central",
-            Scope = "global"
-        };
-
-        await _userSessionRepository.AddAsync(session);
-
-        return Result<AccessTokenDto>.Success(new AccessTokenDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName!,
-            Token = token,
-            Expires = session.ExpiresAt, 
-            Systems = listSystemsRegistry.Select(sr => new SystemRegistryResponseDto
-            {
-                Id = sr.Id,
-                SystemCode = sr.SystemCode,
-                SystemName = sr.SystemName,
-                Description = sr.Description,
-                BaseUrl = sr.BaseUrl,
-                IconUrl = sr.IconUrl,
-                Category = sr.Category,
-                ContactEmail = sr.ContactEmail
-            }).ToList()
-        }); 
-    }
-
-    
-    
     public async Task<(string token, DateTime expires)> GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip)
     {
         var session = await _context.UserSessions
@@ -381,7 +124,7 @@ public class UserService : IUserService
             .Select(r => r.Name!)
             .ToListAsync();
 
-        var (token, jti) = GenerateJwtTokenSystem(user, userRoles, "access", systemName, scope ?? "read", 10);
+        var (token, expires, jti) = _tokenGenerator.GenerateSystemToken(user, userRoles, systemName, scope ?? "read", 10);  //GenerateJwtTokenSystem(user, userRoles, "access", systemName, scope ?? "read", 10);
 
         var accessSession = new UserSession
         {
@@ -401,71 +144,7 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
 
         return (token, accessSession.ExpiresAt);
-    }
-
-    // Helper interno para generar tokens
-    private (string token, string jti) GenerateJwtTokenCentral(ApplicationUser user, string tokenType, List<string> systemName, string scope, int minutesValid)
-    {
-        var jti = Guid.NewGuid().ToString();
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Secret"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Jti, jti),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim("token_type", tokenType),            
-            new Claim("scope", scope)
-        };
-    
-        foreach (var sys in systemName)
-        {
-            claims.Add(new Claim("system", sys));
-        }
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["JWTSettings:ValidIssuer"],
-            audience: _configuration["JWTSettings:ValidAudience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(minutesValid),
-            signingCredentials: creds
-        );
-
-        return (new JwtSecurityTokenHandler().WriteToken(token), jti);
-    }   
-
-    private (string token, string jti) GenerateJwtTokenSystem(ApplicationUser user, List<string> userRoles, string tokenType, string systemName, string scope, int minutesValid)
-    {
-        var jti = Guid.NewGuid().ToString();
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Secret"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Jti, jti),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim("token_type", tokenType),
-            new Claim("system", systemName),
-            new Claim("scope", scope)
-        };
-
-        foreach (var role in userRoles)
-        {
-            claims.Add(new Claim("role", role));
-        }
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["JWTSettings:ValidIssuer"],
-            audience: systemName,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(minutesValid),
-            signingCredentials: creds
-        );
-
-        return (new JwtSecurityTokenHandler().WriteToken(token), jti);
-    } 
+    }    
 
     public async Task<Result<bool>> ValidateTokenAsync(string token)
     {
@@ -498,31 +177,7 @@ public class UserService : IUserService
         return Result<bool>.Success(true);
     } 
 
-    public async Task<Result<bool>> LogoutAsync(string userId, string? jti = null, string? ip = null, string? userAgent = null)
-    {
-        var sessions = _context.UserSessions
-            .Where(s => s.UserId == userId && !s.IsRevoked);
-
-        if (!string.IsNullOrEmpty(jti))
-            sessions = sessions.Where(s => s.JwtId == jti);
-
-        var list = await sessions.ToListAsync();
-        if (!list.Any())
-            return Result<bool>.Failure("No active sessions found");
-
-        foreach (var session in list)
-        {
-            session.IsRevoked = true;
-            session.RevokedAt = DateTime.UtcNow;
-        }
-
-        await _context.SaveChangesAsync();
-
-        // Registrar en el log de auditoría
-        await RecordAuditEventAsync(userId, "logout", ip, userAgent, new { RevokedCount = list.Count });
-
-        return Result<bool>.Success(true);
-    }
+    
 
     public async Task<Result<IEnumerable<UserSessionDto>>> GetActiveSessionsAsync(string userId)
     {

@@ -30,48 +30,7 @@ public class UserController : ControllerBase
             return BadRequest(result.ErrorMessage);
         }
         return Ok(result.Data);
-    }
-
-    [HttpPost("login-document")]
-    public async Task<IActionResult> LoginDocument(LoginDocumentDto dto)
-    {
-        var device = Request.Headers["User-Agent"].ToString();
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-        var result = await _userService.LoginDocumentAsync(dto, device, ip);
-
-        if (!result.IsSuccess)
-            return Unauthorized(result);
-            
-        return Ok(result);
-    }
-
-    [HttpPost("login-document-system")]
-    public async Task<IActionResult> LoginDocumentSystem(LoginDocumentSystemDto dto)
-    {
-        var device = Request.Headers["User-Agent"].ToString();
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var result = await _userService.LoginDocumentSystemAsync(dto, device, ip);
-        if (!result.IsSuccess)
-        {
-            return Unauthorized(result.ErrorMessage);
-        }
-        return Ok(result);
-    }
-
-    [HttpPost("login-email")]
-    public async Task<IActionResult> LoginEmail(LoginEmailDto loginEmailDto)
-    {
-        var device = Request.Headers["User-Agent"].ToString();
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-        var result = await _userService.loginEmailAsync(loginEmailDto, device, ip);
-        if (!result.IsSuccess)
-        {
-            return Unauthorized(result.ErrorMessage);
-        }
-        return Ok(result);
-    }
+    }    
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpPatch("{userId}/enable")]
@@ -101,30 +60,7 @@ public class UserController : ControllerBase
             return BadRequest(result.ErrorMessage);
 
         return Ok(new { message = "Usuario deshabilitado correctamente." });
-    }
-
-    [HttpPost("token-for-system")]
-    public async Task<IActionResult> TokenForSystem([FromBody] SystemTokenRequestDto dto)
-    {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        var jti = User.FindFirstValue(JwtRegisteredClaimNames.Jti);
-
-        if (userId == null || jti == null)
-            return Unauthorized("Invalido token claims");
-
-        var device = Request.Headers["User-Agent"].ToString();
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-        try
-        {
-            var (token, expires) = await _userService.GenerateAccessTokenAsync(userId, jti, dto.SystemName, dto.Scope, device, ip);
-            return Ok(new { token, expires, system = dto.SystemName });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(ex.Message);
-        }
-    }
+    }    
 
     // =====================================================================
     // TOKEN VALIDATION & SESSION MANAGEMENT
@@ -139,27 +75,7 @@ public class UserController : ControllerBase
             return Unauthorized(result);
 
         return Ok(result);
-    }
-
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto)
-    {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-        if (userId == null)
-            return Unauthorized("token inválido");
-
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var ua = Request.Headers["User-Agent"].ToString();
-
-        var result = await _userService.LogoutAsync(userId, dto.JwtId, ip, ua);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
-
-        return Ok(result);
-    }
+    }    
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpGet("sessions")]
@@ -204,7 +120,6 @@ public class UserController : ControllerBase
     // =====================================================================
     // EMAIL VERIFICATION ENDPOINTS
     // =====================================================================
-
     [HttpPost("send-verification-email")]
     public async Task<IActionResult> SendVerificationEmail([FromBody] SendVerificationEmailDto dto)
     {

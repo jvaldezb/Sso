@@ -9,8 +9,7 @@ public class UserProfile: Profile
 {
     public UserProfile()
     {
-        // Mapeo de User a UserDto y viceversa
-        CreateMap<ApplicationUser, LoginDocumentDto>().ReverseMap();
+        // Mapeo de User a UserDto y viceversa        
         CreateMap<ApplicationUser, UserResponseDto>().ReverseMap();
         CreateMap<ApplicationUser, UserForCreateDto>().ReverseMap();
     }
