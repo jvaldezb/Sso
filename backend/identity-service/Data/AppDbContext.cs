@@ -18,6 +18,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<MfaBackupCode> MfaBackupCodes => Set<MfaBackupCode>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -35,6 +36,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
         builder.ApplyConfiguration(new EmailVerificationTokenConfiguration());
         builder.ApplyConfiguration(new MfaBackupCodeConfiguration());
         builder.ApplyConfiguration(new UserSessionConfiguration());
+        builder.ApplyConfiguration(new RefreshTokenConfiguration());
 
         // Aplicar convención snake_case a tablas y columnas
         foreach (var entity in builder.Model.GetEntityTypes())

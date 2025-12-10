@@ -182,6 +182,25 @@ CREATE TABLE mfa_backup_codes (
     CONSTRAINT fk_mfa_backup_codes_asp_net_users_user_id FOREIGN KEY (user_id) REFERENCES asp_net_users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE refresh_tokens (
+    id uuid NOT NULL DEFAULT (gen_random_uuid()),
+    user_id text NOT NULL,
+    token text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    is_revoked boolean NOT NULL,
+    revoked_at timestamp with time zone,
+    replaced_by_token text,
+    device_info text,
+    ip_address text,
+    user_create text,
+    date_create timestamp with time zone,
+    user_update text,
+    date_update timestamp with time zone,
+    CONSTRAINT pk_refresh_tokens PRIMARY KEY (id),
+    CONSTRAINT fk_refresh_tokens_asp_net_users_user_id FOREIGN KEY (user_id) REFERENCES asp_net_users (id) ON DELETE CASCADE
+);
+
 CREATE TABLE user_authentication_providers (
     id uuid NOT NULL DEFAULT (gen_random_uuid()),
     user_id text,
@@ -286,6 +305,8 @@ CREATE UNIQUE INDEX uix_mfa_backup_codes_user_code ON mfa_backup_codes (user_id,
 
 CREATE UNIQUE INDEX ix_provider_configurations_provider_name ON provider_configurations (provider_name);
 
+CREATE INDEX ix_refresh_tokens_user_id ON refresh_tokens (user_id);
+
 CREATE UNIQUE INDEX ix_system_registries_system_code ON system_registries (system_code);
 
 CREATE INDEX ix_user_authentication_providers_application_user_id ON user_authentication_providers (application_user_id);
@@ -297,7 +318,7 @@ CREATE UNIQUE INDEX uq_user_password ON user_password_histories (user_id, passwo
 CREATE UNIQUE INDEX ix_user_sessions_user_id_jwt_id ON user_sessions (user_id, jwt_id);
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-VALUES ('20251207122329_InitialSsoSetup', '8.0.22');
+VALUES ('20251210141919_InitialSsoSetup', '8.0.22');
 
 COMMIT;
 

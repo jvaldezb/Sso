@@ -22,4 +22,6 @@ public class ApplicationUser : IdentityUser
     public DateTime? DateCreate { get; set; }
 
     public ICollection<UserAuthenticationProvider>? AuthenticationProviders { get; set; }
+    
+    public ICollection<RefreshToken>? RefreshTokens { get; set; }
 }
