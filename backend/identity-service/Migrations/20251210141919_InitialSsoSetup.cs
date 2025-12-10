@@ -308,6 +308,36 @@ namespace identity_service.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "refresh_tokens",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    user_id = table.Column<string>(type: "text", nullable: false),
+                    token = table.Column<string>(type: "text", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    is_revoked = table.Column<bool>(type: "boolean", nullable: false),
+                    revoked_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    replaced_by_token = table.Column<string>(type: "text", nullable: true),
+                    device_info = table.Column<string>(type: "text", nullable: true),
+                    ip_address = table.Column<string>(type: "text", nullable: true),
+                    user_create = table.Column<string>(type: "text", nullable: true),
+                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    user_update = table.Column<string>(type: "text", nullable: true),
+                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_refresh_tokens", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_refresh_tokens_asp_net_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "asp_net_users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "user_authentication_providers",
                 columns: table => new
                 {
@@ -506,6 +536,11 @@ namespace identity_service.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_refresh_tokens_user_id",
+                table: "refresh_tokens",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_system_registries_system_code",
                 table: "system_registries",
                 column: "system_code",
@@ -567,6 +602,9 @@ namespace identity_service.Migrations
 
             migrationBuilder.DropTable(
                 name: "provider_configurations");
+
+            migrationBuilder.DropTable(
+                name: "refresh_tokens");
 
             migrationBuilder.DropTable(
                 name: "user_authentication_providers");
