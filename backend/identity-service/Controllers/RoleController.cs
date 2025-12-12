@@ -94,7 +94,7 @@ public class RoleController : ControllerBase
         return Ok(result.Data);
     }
 
-    /// <summary>
+    /// <summary>a25752b3-74ff-4851-a152-0fdb09586cac
     /// Get a role by ID
     /// </summary>
     [HttpGet("{roleId}")]    
@@ -210,7 +210,7 @@ public class RoleController : ControllerBase
     }
 
     /// <summary>
-    /// Get all claims for a role
+    /// Get all claims for a rolea25752b3-74ff-4851-a152-0fdb09586cac
     /// </summary>
     [HttpGet("{roleId}/claims")]    
     public async Task<IActionResult> GetRoleClaims(string roleId)

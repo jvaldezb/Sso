@@ -31,10 +31,7 @@ public interface IUserService
     public Task<Result<bool>> DisableMfaAsync(string userId);
     public Task<Result<bool>> ValidateMfaCodeAsync(string userId, string code);
 
-    // =====================================================================
-    // Obtener usuario actual
-    // =====================================================================    
-    public Task<Result<MeResponseDto>> GetCurrentUserAsync(string userId);
+    
 
     // Enable/Disable user
     public Task<Result<bool>> SetUserEnabledAsync(string performedByUserId, string userId, bool enabled);

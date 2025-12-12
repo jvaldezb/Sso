@@ -249,23 +249,5 @@ public class UserController : ControllerBase
         return Ok(new { success = true, message = "Código de MFA verificado" });
     }
 
-    // =====================================================================
-    // Obtener usuario actual
-    // =====================================================================
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [HttpGet("me")]
-    public async Task<IActionResult> GetCurrentUser()
-    {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-        if (userId == null)
-            return Unauthorized("Token inválido");
-
-        var result = await _userService.GetCurrentUserAsync(userId);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
-
-        return Ok(result.Data);
-    }
+    
 }

@@ -603,66 +603,6 @@ public class UserService : IUserService
         }
 
         return backupCodes;
-    }
-
-    // =====================================================================
-    // GET CURRENT USER PROFILE
-    // =====================================================================
-
-    public async Task<Result<MeResponseDto>> GetCurrentUserAsync(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);        
-
-        if (user == null)
-            return Result<MeResponseDto>.Failure("Usuario no encontrado");
-
-        // 3. Obtener roles del usuario
-        var userRoles = await _userManager.GetRolesAsync(user);
-        var roles = await _roleManager.Roles
-            .Where(r => userRoles.Contains(r.Name!))
-            .ToListAsync();
-
-        var applicationRoles = roles
-            .OfType<ApplicationRole>()
-            .ToList();
-
-        // 4. Obtener sistemas por roles asignados
-        var systemIds = applicationRoles
-            .Select(r => r.SystemId)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .ToList();
-
-        var systemsRegistry = new List<SystemRegistry>();
-
-        if (systemIds.Any())
-        {
-            systemsRegistry = await _context.SystemRegistries
-                .Where(sr => systemIds.Contains(sr.Id))
-                .ToListAsync();
-        }
-
-        // IMPORTANTE:
-        // El endpoint /me NO genera nuevo token.
-        // Solo devuelve la misma info del login.
-        return Result<MeResponseDto>.Success(new MeResponseDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName!,            
-            Systems = systemsRegistry
-                .Select(sr => new SystemRegistryResponseDto
-                {
-                    Id = sr.Id,
-                    SystemCode = sr.SystemCode,
-                    SystemName = sr.SystemName,
-                    Description = sr.Description,
-                    BaseUrl = sr.BaseUrl,
-                    IconUrl = sr.IconUrl,
-                    Category = sr.Category,
-                    ContactEmail = sr.ContactEmail
-                })
-                .ToList()
-        });
-    }
+    }    
     
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using AutoMapper;
 using identity_service.Data;
 using identity_service.Dtos;
 using identity_service.Dtos.Auth;
@@ -21,6 +22,7 @@ private readonly IRefreshTokenService _refreshTokenService;
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IMapper _mapper;
 
     public AuthService(
         IRefreshTokenService refreshTokenService,
@@ -28,7 +30,8 @@ private readonly IRefreshTokenService _refreshTokenService;
         AppDbContext context,
         IUserSessionRepository userSessionRepository,
         RoleManager<ApplicationRole> roleManager,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IMapper mapper)
     {
         _refreshTokenService = refreshTokenService;
         _tokenGenerator = tokenGenerator;
@@ -36,10 +39,16 @@ private readonly IRefreshTokenService _refreshTokenService;
         _userSessionRepository = userSessionRepository;
         _roleManager = roleManager;
         _userManager = userManager;
+        _mapper = mapper;
     }
 
-    public async Task<Result<AuthResponseDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip)
+    public async Task<Result<AuthResponseSsoDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip)
     {
+        // Validar que el sistema SSO Central esté configurado
+        var ssoSystem = await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.IsCentralAdmin == true);
+        if (ssoSystem == null)
+            return Result<AuthResponseSsoDto>.Failure("SSO Central system not configured.");        
+
         // 1. Buscar usuario
         var user = await _userManager.Users
             .FirstOrDefaultAsync(u =>
@@ -47,11 +56,11 @@ private readonly IRefreshTokenService _refreshTokenService;
                 u.DocumentNumber == dto.DocumentNumber);
 
         if (user == null)
-            return Result<AuthResponseDto>.Failure("Invalid credentials");
+            return Result<AuthResponseSsoDto>.Failure("Invalid credentials");
 
         var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
         if (!passwordValid)
-            return Result<AuthResponseDto>.Failure("Invalid credentials");
+            return Result<AuthResponseSsoDto>.Failure("Invalid credentials");
 
         // 2. Encontrar sistemas asignados por roles
         var userRoles = await _userManager.GetRolesAsync(user);
@@ -73,13 +82,18 @@ private readonly IRefreshTokenService _refreshTokenService;
         var systems = listSystemsRegistry.Select(sr => sr.SystemCode).ToList();
 
         // 3. Generar access token Fase A
-        var (accessToken, expires, jti) = _tokenGenerator.GenerateCentralToken(user, systems, "global", 60); /*GenerateJwtTokenCentral(
-            user,
-            "session",
-            systems,
-            "global",
-            60);*/
+        var (accessToken, expires, jti) = _tokenGenerator.GenerateCentralToken(user, systems, "global", 60);         
 
+        var menuDtos = new List<MenuDto>();
+        if (listSystemsRegistry.Any(x => x.IsCentralAdmin == true))
+        {            
+            var menus = await _context.Menus
+                .Where(m => m.SystemId == ssoSystem.Id)
+                .OrderBy(m => m.OrderIndex)            
+                .ToListAsync();                
+
+            menuDtos = _mapper.Map<List<MenuDto>>(menus);
+        }                    
 
         // 4. Registrar sesión
         var session = new UserSession
@@ -103,15 +117,15 @@ private readonly IRefreshTokenService _refreshTokenService;
         await _refreshTokenService.SaveRefreshTokenAsync(user, refreshToken);
 
         // 6. Retornar access + refresh token
-        var result = new AuthResponseDto
+        var result = new AuthResponseSsoDto
         {
             UserId = user.Id,
             FullName = user.FullName!,
             AccessToken = accessToken,
             AccessTokenExpires = session.ExpiresAt,
             RefreshToken = refreshToken.Token,
-            RefreshTokenExpires = refreshToken.ExpiresAt,
-
+            RefreshTokenExpires = refreshToken.ExpiresAt,            
+            SsoSystemId = ssoSystem.Id,            
             Systems = listSystemsRegistry.Select(sr => new SystemRegistryResponseDto
             {
                 Id = sr.Id,
@@ -122,10 +136,12 @@ private readonly IRefreshTokenService _refreshTokenService;
                 IconUrl = sr.IconUrl,
                 Category = sr.Category,
                 ContactEmail = sr.ContactEmail
-            }).ToList()
+            }
+            ).ToList(),
+            Menus = menuDtos
         };
 
-        return Result<AuthResponseDto>.Success(result);
+        return Result<AuthResponseSsoDto>.Success(result);
     }
 
     public async Task<Result<AuthResponseDto>> LoginDocumentSystemAsync(LoginDocumentSystemDto dto, string device, string? ip)
@@ -548,6 +564,81 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         _context.AuthAuditLogs.Add(log);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<Result<MeResponseDto>> GetCurrentUserAsync(string userId)
+    {
+        // Validar que el sistema SSO Central esté configurado
+        var ssoSystem = await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.IsCentralAdmin == true);
+        if (ssoSystem == null)
+            return Result<MeResponseDto>.Failure("SSO Central system not configured.");  
+
+        var user = await _userManager.FindByIdAsync(userId);        
+        if (user == null)
+            return Result<MeResponseDto>.Failure("Usuario no encontrado");
+
+        // 3. Obtener roles del usuario
+        var userRoles = await _userManager.GetRolesAsync(user);
+        var roles = await _roleManager.Roles
+            .Where(r => userRoles.Contains(r.Name!))
+            .ToListAsync();
+
+        var applicationRoles = roles
+            .OfType<ApplicationRole>()
+            .ToList();
+
+        // 4. Obtener sistemas por roles asignados
+        var systemIds = applicationRoles
+            .Select(r => r.SystemId)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToList();
+
+          
+
+        var listSystemsRegistry = new List<SystemRegistry>();
+
+        if (systemIds.Any())
+        {
+            listSystemsRegistry = await _context.SystemRegistries
+            .Where(sr => systemIds.Contains(sr.Id))
+            .ToListAsync();  
+        }
+
+        var menuDtos = new List<MenuDto>();
+        if (listSystemsRegistry.Any(x => x.IsCentralAdmin == true))
+        {            
+            var menus = await _context.Menus
+                .Where(m => m.SystemId == ssoSystem.Id)
+                .OrderBy(m => m.OrderIndex)            
+                .ToListAsync();                
+
+            menuDtos = _mapper.Map<List<MenuDto>>(menus);
+        }   
+
+        // IMPORTANTE:
+        // El endpoint /me NO genera nuevo token.
+        // Solo devuelve la misma info del login.
+        return Result<MeResponseDto>.Success(new MeResponseDto
+        {
+            UserId = user.Id,
+            FullName = user.FullName!,     
+            SsoSystemId = ssoSystem.Id,       
+            Systems = listSystemsRegistry
+                .Select(sr => new SystemRegistryResponseDto
+                {
+                    Id = sr.Id,
+                    SystemCode = sr.SystemCode,
+                    SystemName = sr.SystemName,
+                    Description = sr.Description,
+                    BaseUrl = sr.BaseUrl,
+                    IconUrl = sr.IconUrl,
+                    Category = sr.Category,
+                    ContactEmail = sr.ContactEmail
+                })
+                .ToList(),
+            Menus = menuDtos
+        });
     }
 }
 

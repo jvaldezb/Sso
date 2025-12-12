@@ -10,6 +10,7 @@ public class AuthProfile: Profile
     public AuthProfile()
     {
         CreateMap<ApplicationUser, LoginDocumentDto>().ReverseMap();
+        CreateMap<Menu, MenuDto>().ReverseMap();
     }
 
 }
