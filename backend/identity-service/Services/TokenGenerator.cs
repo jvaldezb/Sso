@@ -73,6 +73,10 @@ public class TokenGenerator : ITokenGenerator
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Jti, jti),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+            new Claim("document_type", user.DocumentType!),
+            new Claim("document_number", user.DocumentNumber!),
+            new Claim("preferred_username", user.UserName!),
+            new Claim("full_name", user.FullName!),
             new Claim("token_type", "access"),
             new Claim("system", systemName),
             new Claim("scope", scope)
