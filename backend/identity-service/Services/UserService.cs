@@ -342,6 +342,129 @@ public class UserService : IUserService
         return Result<IEnumerable<string>>.Success(roles);
     }
 
+    public async Task<Result<UserRolesResponseDto>> AssignRolesToUserAsync(string performedByUserId, string userId, AssignRolesDto dto)
+    {
+        // Validar que el usuario que realiza la acción existe
+        var performedByUser = await _userManager.FindByIdAsync(performedByUserId);
+        if (performedByUser == null)
+            return Result<UserRolesResponseDto>.Failure("El usuario que realiza la acción no existe.");
+
+        // Buscar el usuario al que se asignarán los roles
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return Result<UserRolesResponseDto>.Failure("Usuario no encontrado.");
+
+        // Validar que todos los roles existen
+        var rolesList = new List<ApplicationRole>();
+        foreach (var roleId in dto.RoleIds)
+        {
+            var role = await _roleManager.FindByIdAsync(roleId.ToString());
+            if (role == null)
+                return Result<UserRolesResponseDto>.Failure($"El rol con ID {roleId} no existe.");
+            rolesList.Add(role);
+        }
+
+        // Obtener roles actuales del usuario
+        var currentRoles = await _userManager.GetRolesAsync(user);
+
+        // Remover roles actuales
+        if (currentRoles.Any())
+        {
+            var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeRolesResult.Succeeded)
+                return Result<UserRolesResponseDto>.Failure(
+                    string.Join(", ", removeRolesResult.Errors.Select(e => e.Description))
+                );
+        }
+
+        // Asignar los nuevos roles
+        var roleNames = rolesList.Select(r => r.Name!).ToList();
+        var addRolesResult = await _userManager.AddToRolesAsync(user, roleNames);
+        if (!addRolesResult.Succeeded)
+            return Result<UserRolesResponseDto>.Failure(
+                string.Join(", ", addRolesResult.Errors.Select(e => e.Description))
+            );
+
+        // Actualizar metadatos del usuario
+        user.UserUpdate = performedByUserId;
+        user.DateUpdate = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        // Registrar auditoría
+        await RecordAuditEventAsync(
+            performedByUserId,
+            "USER_ROLES_ASSIGNED",
+            null,
+            null,
+            new { UserId = userId, PerformedByUser = performedByUser.UserName, RoleIds = dto.RoleIds }
+        );
+
+        // Preparar respuesta con información detallada de los roles
+        var userRoles = new List<UserRoleDto>();
+        foreach (var role in rolesList)
+        {
+            var system = role.SystemId.HasValue 
+                ? await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.Id == role.SystemId.Value)
+                : null;
+            userRoles.Add(new UserRoleDto
+            {
+                RoleId = Guid.Parse(role.Id),
+                RoleName = role.Name!,
+                SystemId = role.SystemId,
+                SystemCode = system?.SystemCode,
+                SystemName = system?.SystemName
+            });
+        }
+
+        var response = new UserRolesResponseDto
+        {
+            UserId = userId,
+            Roles = userRoles
+        };
+
+        return Result<UserRolesResponseDto>.Success(response);
+    }
+
+    public async Task<Result<UserRolesResponseDto>> GetUserRolesDetailedAsync(string userId)
+    {
+        // Buscar el usuario
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return Result<UserRolesResponseDto>.Failure("Usuario no encontrado.");
+
+        // Obtener nombres de roles del usuario
+        var roleNames = await _userManager.GetRolesAsync(user);
+
+        // Obtener información detallada de los roles
+        var userRoles = new List<UserRoleDto>();
+        foreach (var roleName in roleNames)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role != null)
+            {
+                var system = role.SystemId.HasValue 
+                    ? await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.Id == role.SystemId.Value)
+                    : null;
+                userRoles.Add(new UserRoleDto
+                {
+                    RoleId = Guid.Parse(role.Id),
+                    RoleName = role.Name!,
+                    SystemId = role.SystemId,
+                    SystemCode = system?.SystemCode,
+                    SystemName = system?.SystemName
+                });
+            }
+        }
+
+        var response = new UserRolesResponseDto
+        {
+            UserId = userId,
+            Roles = userRoles
+        };
+
+        return Result<UserRolesResponseDto>.Success(response);
+    }
+
     public async Task<Result<bool>> ChangePasswordAsync(string userId, ChangePasswordDto dto)
     {
         var user = await _userManager.FindByIdAsync(userId);

@@ -18,6 +18,10 @@ public interface IUserService
     
     public Task<Result<IEnumerable<UserSessionDto>>> GetActiveSessionsAsync(string userId);
     public Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
+    
+    // Multiple Roles Management
+    public Task<Result<UserRolesResponseDto>> AssignRolesToUserAsync(string performedByUserId, string userId, AssignRolesDto dto);
+    public Task<Result<UserRolesResponseDto>> GetUserRolesDetailedAsync(string userId);
 
     // Email Verification Methods
     public Task<Result<VerificationCodeResponseDto>> SendVerificationEmailAsync(string email);

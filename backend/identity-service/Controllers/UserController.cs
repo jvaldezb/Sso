@@ -144,6 +144,36 @@ public class UserController : ControllerBase
         return Ok(result);
     }
 
+    // =====================================================================
+    // MULTIPLE ROLES MANAGEMENT
+    // =====================================================================
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpPost("{userId}/roles")]
+    public async Task<IActionResult> AssignRolesToUser(string userId, [FromBody] AssignRolesDto dto)
+    {
+        var performedByUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (performedByUserId == null)
+            return Unauthorized("Token inválido");
+
+        var result = await _userService.AssignRolesToUserAsync(performedByUserId, userId, dto);
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result.Data);
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpGet("{userId}/roles")]
+    public async Task<IActionResult> GetUserRolesDetailed(string userId)
+    {
+        var result = await _userService.GetUserRolesDetailedAsync(userId);
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result.Data);
+    }
+
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpGet]
     public async Task<IActionResult> GetUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
