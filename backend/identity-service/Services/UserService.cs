@@ -342,6 +342,33 @@ public class UserService : IUserService
         return Result<IEnumerable<string>>.Success(roles);
     }
 
+    public async Task<Result<bool>> ChangePasswordAsync(string userId, ChangePasswordDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return Result<bool>.Failure("Usuario no encontrado");
+
+        // Verify current password
+        var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+        if (!isCurrentPasswordValid)
+            return Result<bool>.Failure("La contraseña actual es incorrecta");
+
+        // Change password
+        var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        if (!result.Succeeded)
+            return Result<bool>.Failure(string.Join(", ", result.Errors.Select(e => e.Description)));
+
+        // Update metadata
+        user.UserUpdate = userId;
+        user.DateUpdate = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        // Record audit event
+        await RecordAuditEventAsync(userId, "PASSWORD_CHANGE", null, null, new { UserId = userId });
+
+        return Result<bool>.Success(true);
+    }
+
     public async Task<Result<bool>> SetUserEnabledAsync(string performedByUserId, string userId, bool enabled)
     {
         var user = await _userManager.FindByIdAsync(userId);

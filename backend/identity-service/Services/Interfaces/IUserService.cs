@@ -32,7 +32,7 @@ public interface IUserService
     public Task<Result<bool>> DisableMfaAsync(string userId);
     public Task<Result<bool>> ValidateMfaCodeAsync(string userId, string code);
 
-    
+    public Task<Result<bool>> ChangePasswordAsync(string userId, ChangePasswordDto dto);
 
     // Enable/Disable user
     public Task<Result<bool>> SetUserEnabledAsync(string performedByUserId, string userId, bool enabled);

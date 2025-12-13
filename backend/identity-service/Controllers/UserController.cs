@@ -1,10 +1,12 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using FluentValidation;
 using identity_service.Dtos;
 using identity_service.Dtos.User;
 using identity_service.Repositories;
 using identity_service.Services.Interfaces;
+using identity_service.Validations.User;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +18,11 @@ namespace identity_service.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
-    public UserController(IUserService userService)
+    private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
+    public UserController(IUserService userService, IValidator<ChangePasswordDto> changePasswordValidator)
     {
         _userService = userService;
+        _changePasswordValidator = changePasswordValidator;
     }
 
     [HttpPost("register")]
@@ -76,6 +80,26 @@ public class UserController : ControllerBase
 
         return Ok(new { message = "Usuario deshabilitado correctamente." });
     }    
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpPatch("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Unauthorized("Token inválido");
+
+        // Validación manual (opcional)
+        var validationResult = await _changePasswordValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
+        var result = await _userService.ChangePasswordAsync(userId, dto);
+        if (!result.IsSuccess)
+            return BadRequest(new { message = result.ErrorMessage });
+
+        return Ok(new { message = "Contraseña cambiada correctamente." });
+    }
 
     // =====================================================================
     // TOKEN VALIDATION & SESSION MANAGEMENT

@@ -4,6 +4,7 @@ using identity_service.Data;
 using identity_service.Dtos.AuthAuditLog;
 using identity_service.Dtos.Role;
 using identity_service.Dtos.SystemRegistry;
+using identity_service.Dtos.User;
 using identity_service.Models;
 using identity_service.Repositories;
 using identity_service.Repositories.Interfaces;
@@ -12,6 +13,7 @@ using identity_service.Services.Interfaces;
 using identity_service.Validations.AuthAuditLog;
 using identity_service.Validations.Role;
 using identity_service.Validations.SystemRegistry;
+using identity_service.Validations.User;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -144,6 +146,7 @@ builder.Services.AddScoped<IValidator<CreateRoleDto>, CreateRoleValidator>();
 builder.Services.AddScoped<IValidator<UpdateRoleDto>, UpdateRoleValidator>();
 builder.Services.AddScoped<IValidator<CreateSystemRegistryDto>, CreateSystemRegistryValidator>();
 builder.Services.AddScoped<IValidator<UpdateSystemRegistryDto>, UpdateSystemRegistryValidator>();
+builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordDtoValidator>();
 
 // Repositories
 builder.Services.AddScoped<IAuthAuditLogRepository, AuthAuditLogRepository>();
