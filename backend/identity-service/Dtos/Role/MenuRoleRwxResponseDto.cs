@@ -8,8 +8,10 @@ public class MenuRoleRwxResponseDto
     public Guid? ParentId { get; set; }
     public Guid SystemId { get; set; }    
     public string MenuLabel { get; set; } = null!;   
+    public string? Url { get; set; }
     public string? IconUrl { get; set; }     
     public short Level { get; set; } = 1;
-    public string? Module { get; set; }        
+    public string? Module { get; set; }      
+    public string? ModuleType { get; set; }  
     public int? RwxValue { get; set; }
 }
