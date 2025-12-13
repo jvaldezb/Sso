@@ -313,7 +313,7 @@ private readonly IRefreshTokenService _refreshTokenService;
         }); 
     }
 
-    public async Task<Result<SystemAccessTokenDto>> GenerateSystemAccessTokenAsync(
+    public async Task<Result<AuthResponseDto>> GenerateSystemAccessTokenAsync(
     string userId,
     string sessionJti,
     string systemName,
@@ -330,19 +330,19 @@ private readonly IRefreshTokenService _refreshTokenService;
                 !s.IsRevoked);
 
         if (session == null)
-            return Result<SystemAccessTokenDto>.Failure("Invalid or expired session token");
+            return Result<AuthResponseDto>.Failure("Invalid or expired session token");
 
         // 2. Buscar usuario
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-            return Result<SystemAccessTokenDto>.Failure("User not found");
+            return Result<AuthResponseDto>.Failure("User not found");
 
         // 3. Buscar sistema
         var system = await _context.SystemRegistries
             .FirstOrDefaultAsync(sr => sr.SystemCode == systemName);
 
         if (system == null)
-            return Result<SystemAccessTokenDto>.Failure("Unknown system");
+            return Result<AuthResponseDto>.Failure("Unknown system");
 
         // 4. Roles del usuario en ese sistema
         var roles = await _roleManager.Roles
@@ -354,7 +354,14 @@ private readonly IRefreshTokenService _refreshTokenService;
         var (token, expires, jti) = _tokenGenerator
             .GenerateSystemToken(user, roles, systemName, scope ?? "read", 10);
 
-        // 6. Registrar sesión
+        // 6. Crear RefreshToken
+        var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(
+            user, 
+            ip, 
+            device
+        );    
+
+        // 7. Registrar sesión
         var sysSession = new UserSession
         {
             UserId = userId,
@@ -371,12 +378,29 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         await _userSessionRepository.AddAsync(sysSession);
 
-        // 7. Respuesta
-        return Result<SystemAccessTokenDto>.Success(new SystemAccessTokenDto
+        // 8. Respuesta
+        return Result<AuthResponseDto>.Success(new AuthResponseDto
         {
+            UserId = user.Id,
+            FullName = user.FullName!,
             AccessToken = token,
-            Expires = expires,
-            System = systemName
+            AccessTokenExpires = expires,
+            RefreshToken = refreshToken.Token,
+            RefreshTokenExpires = refreshToken.ExpiresAt,
+            Systems = new List<SystemRegistryResponseDto> // Habitualmente solo 1
+            {
+                new SystemRegistryResponseDto
+                {
+                    Id = system.Id,
+                    SystemCode = system.SystemCode,
+                    SystemName = system.SystemName,
+                    Description = system.Description,
+                    BaseUrl = system.BaseUrl,
+                    IconUrl = system.IconUrl,
+                    Category = system.Category,
+                    ContactEmail = system.ContactEmail
+                }
+            }
         });
     }
 
@@ -443,7 +467,21 @@ private readonly IRefreshTokenService _refreshTokenService;
                 AccessToken = accessToken,
                 AccessTokenExpires = accessExpires,
                 RefreshToken = newToken.Token,
-                RefreshTokenExpires = newToken.ExpiresAt
+                RefreshTokenExpires = newToken.ExpiresAt,
+                Systems = new List<SystemRegistryResponseDto> // Habitualmente solo 1
+                {
+                    new SystemRegistryResponseDto
+                    {
+                        Id = system.Id,
+                        SystemCode = system.SystemCode,
+                        SystemName = system.SystemName,
+                        Description = system.Description,
+                        BaseUrl = system.BaseUrl,
+                        IconUrl = system.IconUrl,
+                        Category = system.Category,
+                        ContactEmail = system.ContactEmail
+                    }
+                }
             };
         }
         else
