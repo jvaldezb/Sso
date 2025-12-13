@@ -155,6 +155,31 @@ public class RoleService : IRoleService
 
             var roleDtos = _mapper.Map<List<RoleDto>>(roles);
 
+            // Enrich RoleDto with SystemCode and SystemName
+            var systemIds = roles
+                .Where(r => r.SystemId != null)
+                .Select(r => r.SystemId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (systemIds.Count > 0)
+            {
+                var registries = await _context.SystemRegistries
+                    .Where(sr => systemIds.Contains(sr.Id))
+                    .ToListAsync();
+
+                var registryById = registries.ToDictionary(sr => sr.Id, sr => sr);
+
+                foreach (var dto in roleDtos)
+                {
+                    if (dto.SystemId != Guid.Empty && registryById.TryGetValue(dto.SystemId, out var reg))
+                    {
+                        dto.SystemCode = reg.SystemCode;
+                        dto.SystemName = reg.SystemName;
+                    }
+                }
+            }
+
             return Result<PaginatedList<RoleDto>>.Success(
                 new PaginatedList<RoleDto>(roleDtos, totalCount, page, size));
         }

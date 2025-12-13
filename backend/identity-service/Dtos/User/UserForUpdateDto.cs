@@ -1,10 +1,9 @@
 using System;
-using identity_service.Models;
 
 namespace identity_service.Dtos.User;
 
-public class UserForCreateDto
-{    
+public class UserForUpdateDto
+{
     public required string FullName { get; set; }
     public required string UserName { get; set; }
     public required string Email { get; set; }

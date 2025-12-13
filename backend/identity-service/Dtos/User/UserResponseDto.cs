@@ -11,4 +11,6 @@ public class UserResponseDto
     public string DocumentType { get; set; } = null!;
     public string DocumentNumber { get; set; } = null!;
     public bool IsEnabled { get; set; }
+    public Guid RoleId { get; set; }
+    public string RoleName { get; set; } = null!;
 }

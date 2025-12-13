@@ -30,7 +30,22 @@ public class UserController : ControllerBase
             return BadRequest(result.ErrorMessage);
         }
         return Ok(result.Data);
-    }    
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpPut("{userId}")]
+    public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UserForUpdateDto userDto)
+    {
+        var performedByUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (performedByUserId == null)
+            return Unauthorized("Token inválido");
+
+        var result = await _userService.UpdateAsync(performedByUserId, userId, userDto);
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+
+        return Ok(result.Data);
+    }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [HttpPatch("{userId}/enable")]
