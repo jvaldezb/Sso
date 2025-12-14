@@ -74,6 +74,25 @@ namespace identity_service.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "exchange_tokens",
+                columns: table => new
+                {
+                    jti = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    system_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    session_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    used_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    ip_address = table.Column<string>(type: "text", nullable: true),
+                    user_agent = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_exchange_tokens", x => x.jti);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "provider_configurations",
                 columns: table => new
                 {
@@ -308,36 +327,6 @@ namespace identity_service.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "refresh_tokens",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
-                    user_id = table.Column<string>(type: "text", nullable: false),
-                    token = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    is_revoked = table.Column<bool>(type: "boolean", nullable: false),
-                    revoked_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    replaced_by_token = table.Column<string>(type: "text", nullable: true),
-                    device_info = table.Column<string>(type: "text", nullable: true),
-                    ip_address = table.Column<string>(type: "text", nullable: true),
-                    user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_refresh_tokens", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_refresh_tokens_asp_net_users_user_id",
-                        column: x => x.user_id,
-                        principalTable: "asp_net_users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "user_authentication_providers",
                 columns: table => new
                 {
@@ -435,12 +424,13 @@ namespace identity_service.Migrations
                     menu_label = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     description = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     level = table.Column<short>(type: "smallint", nullable: false),
-                    module = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    module_type = table.Column<string>(type: "character varying(25)", maxLength: 25, nullable: true),
+                    module = table.Column<string>(type: "text", nullable: true),
+                    module_type = table.Column<string>(type: "text", nullable: true),
+                    menu_type = table.Column<string>(type: "text", nullable: true),
                     required_claim_type = table.Column<string>(type: "text", nullable: true),
                     required_claim_min_value = table.Column<int>(type: "integer", nullable: false),
-                    icon_url = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    access_scope = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: true),
+                    icon_url = table.Column<string>(type: "text", nullable: true),
+                    access_scope = table.Column<string>(type: "character varying(25)", maxLength: 25, nullable: true),
                     order_index = table.Column<short>(type: "smallint", nullable: false),
                     bit_position = table.Column<int>(type: "integer", nullable: true),
                     url = table.Column<string>(type: "text", nullable: true),
@@ -464,6 +454,50 @@ namespace identity_service.Migrations
                         principalTable: "system_registries",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "refresh_tokens",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    user_id = table.Column<string>(type: "text", nullable: false),
+                    system_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    session_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    token = table.Column<string>(type: "text", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    is_revoked = table.Column<bool>(type: "boolean", nullable: false),
+                    revoked_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    replaced_by_token = table.Column<string>(type: "text", nullable: true),
+                    device_info = table.Column<string>(type: "text", nullable: true),
+                    ip_address = table.Column<string>(type: "text", nullable: true),
+                    user_create = table.Column<string>(type: "text", nullable: true),
+                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    user_update = table.Column<string>(type: "text", nullable: true),
+                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_refresh_tokens", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_refresh_tokens_asp_net_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "asp_net_users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_refresh_tokens_system_registries_system_id",
+                        column: x => x.system_id,
+                        principalTable: "system_registries",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "fk_refresh_tokens_user_sessions_session_id",
+                        column: x => x.session_id,
+                        principalTable: "user_sessions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateIndex(
@@ -514,6 +548,17 @@ namespace identity_service.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
+                name: "idx_exchange_tokens_expires_at",
+                table: "exchange_tokens",
+                column: "expires_at");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_exchange_tokens_unused",
+                table: "exchange_tokens",
+                column: "jti",
+                filter: "used_at IS NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_menus_parent_id",
                 table: "menus",
                 column: "parent_id");
@@ -534,6 +579,16 @@ namespace identity_service.Migrations
                 table: "provider_configurations",
                 column: "provider_name",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_refresh_tokens_session_id",
+                table: "refresh_tokens",
+                column: "session_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_refresh_tokens_system_id",
+                table: "refresh_tokens",
+                column: "system_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_refresh_tokens_user_id",
@@ -595,6 +650,9 @@ namespace identity_service.Migrations
                 name: "email_verification_tokens");
 
             migrationBuilder.DropTable(
+                name: "exchange_tokens");
+
+            migrationBuilder.DropTable(
                 name: "menus");
 
             migrationBuilder.DropTable(
@@ -613,13 +671,13 @@ namespace identity_service.Migrations
                 name: "user_password_histories");
 
             migrationBuilder.DropTable(
-                name: "user_sessions");
-
-            migrationBuilder.DropTable(
                 name: "asp_net_roles");
 
             migrationBuilder.DropTable(
                 name: "system_registries");
+
+            migrationBuilder.DropTable(
+                name: "user_sessions");
 
             migrationBuilder.DropTable(
                 name: "asp_net_users");

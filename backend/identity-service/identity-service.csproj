@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Dtos/ExchangeToken/" />
     <Folder Include="Extensions/" />
     <Folder Include="Validations/User/" />
   </ItemGroup>

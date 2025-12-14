@@ -478,6 +478,61 @@ namespace identity_service.Migrations
                     b.ToTable("email_verification_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("identity_service.Models.ExchangeToken", b =>
+                {
+                    b.Property<Guid>("Jti")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("jti")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text")
+                        .HasColumnName("ip_address");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<Guid>("SystemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("system_id");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<string>("UserAgent")
+                        .HasColumnType("text")
+                        .HasColumnName("user_agent");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Jti")
+                        .HasName("pk_exchange_tokens");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("idx_exchange_tokens_expires_at");
+
+                    b.HasIndex("Jti")
+                        .HasDatabaseName("idx_exchange_tokens_unused")
+                        .HasFilter("used_at IS NULL");
+
+                    b.ToTable("exchange_tokens", (string)null);
+                });
+
             modelBuilder.Entity("identity_service.Models.Menu", b =>
                 {
                     b.Property<Guid>("Id")
@@ -487,8 +542,8 @@ namespace identity_service.Migrations
                         .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AccessScope")
-                        .HasMaxLength(15)
-                        .HasColumnType("character varying(15)")
+                        .HasMaxLength(25)
+                        .HasColumnType("character varying(25)")
                         .HasColumnName("access_scope");
 
                     b.Property<int?>("BitPosition")
@@ -509,8 +564,7 @@ namespace identity_service.Migrations
                         .HasColumnName("description");
 
                     b.Property<string>("IconUrl")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasColumnType("text")
                         .HasColumnName("icon_url");
 
                     b.Property<short>("Level")
@@ -523,14 +577,16 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("menu_label");
 
+                    b.Property<string>("MenuType")
+                        .HasColumnType("text")
+                        .HasColumnName("menu_type");
+
                     b.Property<string>("Module")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("text")
                         .HasColumnName("module");
 
                     b.Property<string>("ModuleType")
-                        .HasMaxLength(25)
-                        .HasColumnType("character varying(25)")
+                        .HasColumnType("text")
                         .HasColumnName("module_type");
 
                     b.Property<short>("OrderIndex")
@@ -749,6 +805,14 @@ namespace identity_service.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
 
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<Guid?>("SystemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("system_id");
+
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasColumnType("text")
@@ -769,6 +833,12 @@ namespace identity_service.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("ix_refresh_tokens_session_id");
+
+                    b.HasIndex("SystemId")
+                        .HasDatabaseName("ix_refresh_tokens_system_id");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_refresh_tokens_user_id");
@@ -1191,12 +1261,28 @@ namespace identity_service.Migrations
 
             modelBuilder.Entity("identity_service.Models.RefreshToken", b =>
                 {
+                    b.HasOne("identity_service.Models.UserSession", "Session")
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_refresh_tokens_user_sessions_session_id");
+
+                    b.HasOne("identity_service.Models.SystemRegistry", "System")
+                        .WithMany()
+                        .HasForeignKey("SystemId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_refresh_tokens_system_registries_system_id");
+
                     b.HasOne("identity_service.Models.ApplicationUser", "User")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_refresh_tokens_asp_net_users_user_id");
+
+                    b.Navigation("Session");
+
+                    b.Navigation("System");
 
                     b.Navigation("User");
                 });

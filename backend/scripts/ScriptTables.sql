@@ -54,6 +54,19 @@ CREATE TABLE asp_net_users (
     CONSTRAINT pk_asp_net_users PRIMARY KEY (id)
 );
 
+CREATE TABLE exchange_tokens (
+    jti uuid NOT NULL DEFAULT (gen_random_uuid()),
+    system_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    session_id uuid NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    used_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    ip_address text,
+    user_agent text,
+    CONSTRAINT pk_exchange_tokens PRIMARY KEY (jti)
+);
+
 CREATE TABLE provider_configurations (
     id uuid NOT NULL DEFAULT (gen_random_uuid()),
     provider_name character varying(50) NOT NULL,
@@ -182,25 +195,6 @@ CREATE TABLE mfa_backup_codes (
     CONSTRAINT fk_mfa_backup_codes_asp_net_users_user_id FOREIGN KEY (user_id) REFERENCES asp_net_users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE refresh_tokens (
-    id uuid NOT NULL DEFAULT (gen_random_uuid()),
-    user_id text NOT NULL,
-    token text NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    expires_at timestamp with time zone NOT NULL,
-    is_revoked boolean NOT NULL,
-    revoked_at timestamp with time zone,
-    replaced_by_token text,
-    device_info text,
-    ip_address text,
-    user_create text,
-    date_create timestamp with time zone,
-    user_update text,
-    date_update timestamp with time zone,
-    CONSTRAINT pk_refresh_tokens PRIMARY KEY (id),
-    CONSTRAINT fk_refresh_tokens_asp_net_users_user_id FOREIGN KEY (user_id) REFERENCES asp_net_users (id) ON DELETE CASCADE
-);
-
 CREATE TABLE user_authentication_providers (
     id uuid NOT NULL DEFAULT (gen_random_uuid()),
     user_id text,
@@ -261,12 +255,13 @@ CREATE TABLE menus (
     menu_label character varying(50) NOT NULL,
     description character varying(150),
     level smallint NOT NULL,
-    module character varying(50),
-    module_type character varying(25),
+    module text,
+    module_type text,
+    menu_type text,
     required_claim_type text,
     required_claim_min_value integer NOT NULL,
-    icon_url character varying(200),
-    access_scope character varying(15),
+    icon_url text,
+    access_scope character varying(25),
     order_index smallint NOT NULL,
     bit_position integer,
     url text,
@@ -277,6 +272,29 @@ CREATE TABLE menus (
     CONSTRAINT pk_menus PRIMARY KEY (id),
     CONSTRAINT fk_menus_menus_parent_id FOREIGN KEY (parent_id) REFERENCES menus (id) ON DELETE CASCADE,
     CONSTRAINT fk_menus_system_registries_system_id FOREIGN KEY (system_id) REFERENCES system_registries (id) ON DELETE CASCADE
+);
+
+CREATE TABLE refresh_tokens (
+    id uuid NOT NULL DEFAULT (gen_random_uuid()),
+    user_id text NOT NULL,
+    system_id uuid,
+    session_id uuid,
+    token text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    is_revoked boolean NOT NULL,
+    revoked_at timestamp with time zone,
+    replaced_by_token text,
+    device_info text,
+    ip_address text,
+    user_create text,
+    date_create timestamp with time zone,
+    user_update text,
+    date_update timestamp with time zone,
+    CONSTRAINT pk_refresh_tokens PRIMARY KEY (id),
+    CONSTRAINT fk_refresh_tokens_asp_net_users_user_id FOREIGN KEY (user_id) REFERENCES asp_net_users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_refresh_tokens_system_registries_system_id FOREIGN KEY (system_id) REFERENCES system_registries (id) ON DELETE SET NULL,
+    CONSTRAINT fk_refresh_tokens_user_sessions_session_id FOREIGN KEY (session_id) REFERENCES user_sessions (id) ON DELETE SET NULL
 );
 
 CREATE INDEX ix_asp_net_role_claims_role_id ON asp_net_role_claims (role_id);
@@ -297,6 +315,10 @@ CREATE INDEX ix_auth_audit_logs_user_id ON auth_audit_logs (user_id);
 
 CREATE INDEX ix_email_verification_tokens_user_id ON email_verification_tokens (user_id);
 
+CREATE INDEX idx_exchange_tokens_expires_at ON exchange_tokens (expires_at);
+
+CREATE INDEX idx_exchange_tokens_unused ON exchange_tokens (jti) WHERE used_at IS NULL;
+
 CREATE INDEX ix_menus_parent_id ON menus (parent_id);
 
 CREATE INDEX ix_menus_system_id ON menus (system_id);
@@ -304,6 +326,10 @@ CREATE INDEX ix_menus_system_id ON menus (system_id);
 CREATE UNIQUE INDEX uix_mfa_backup_codes_user_code ON mfa_backup_codes (user_id, code);
 
 CREATE UNIQUE INDEX ix_provider_configurations_provider_name ON provider_configurations (provider_name);
+
+CREATE INDEX ix_refresh_tokens_session_id ON refresh_tokens (session_id);
+
+CREATE INDEX ix_refresh_tokens_system_id ON refresh_tokens (system_id);
 
 CREATE INDEX ix_refresh_tokens_user_id ON refresh_tokens (user_id);
 
@@ -318,7 +344,7 @@ CREATE UNIQUE INDEX uq_user_password ON user_password_histories (user_id, passwo
 CREATE UNIQUE INDEX ix_user_sessions_user_id_jwt_id ON user_sessions (user_id, jwt_id);
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-VALUES ('20251210141919_InitialSsoSetup', '8.0.22');
+VALUES ('20251214194959_InitialSsoSetup', '8.0.22');
 
 COMMIT;
 
