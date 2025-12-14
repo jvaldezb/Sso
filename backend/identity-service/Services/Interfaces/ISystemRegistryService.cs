@@ -12,6 +12,7 @@ public interface ISystemRegistryService
     Task<Result<PaginatedList<SystemRegistryDto>>> GetAllAsync(int page, int size);
     Task<Result<SystemRegistryDto>> GetByIdAsync(Guid id);
     Task<Result<SystemRegistryDto>> GetByCodeAsync(string systemCode);
+    Task<Result<List<SystemRegistryWithMenusDto>>> GetAllWithMenusAsync();
     Task<PaginatedList<SystemRegistryDto>> GetByCodesAsync(IEnumerable<string> systemCodes);
     Task<Result<bool>> SetEnabledAsync(string performedByUserId, Guid id, bool enabled);
     Task<Result<bool>> UpdateApiKeyAsync(string performedByUserId, Guid id, string apiKey);

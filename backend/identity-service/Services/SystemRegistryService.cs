@@ -281,6 +281,54 @@ public class SystemRegistryService : ISystemRegistryService
         }
     }
 
+    public async Task<Result<List<SystemRegistryWithMenusDto>>> GetAllWithMenusAsync()
+    {
+        try
+        {
+            var systems = await _context.SystemRegistries
+                .Include(s => s.Menus)
+                .Where(s => s.IsEnabled)
+                .ToListAsync();
+
+            var systemDtos = systems.Select(system => new SystemRegistryWithMenusDto
+            {
+                Id = system.Id,
+                SystemCode = system.SystemCode,
+                SystemName = system.SystemName,
+                Description = system.Description,
+                BaseUrl = system.BaseUrl,
+                IconUrl = system.IconUrl,
+                IsEnabled = system.IsEnabled,
+                Category = system.Category,
+                ContactEmail = system.ContactEmail,
+                IsCentralAdmin = system.IsCentralAdmin ?? false,
+                ApiKey = system.ApiKey,
+                LastSync = system.LastSync,
+                Menus = system.Menus?.Select(m => new MenuDetailsDto
+                {
+                    Id = m.Id,
+                    ParentId = m.ParentId,
+                    SystemId = m.SystemId,
+                    MenuLabel = m.MenuLabel,
+                    Description = m.Description,
+                    Level = m.Level,
+                    Module = m.Module,
+                    ModuleType = m.ModuleType,
+                    IconUrl = m.IconUrl,
+                    AccessScope = m.AccessScope,
+                    OrderIndex = m.OrderIndex,                    
+                    Url = m.Url
+                }).OrderBy(m => m.OrderIndex).ToList() ?? new List<MenuDetailsDto>()
+            }).ToList();
+
+            return Result<List<SystemRegistryWithMenusDto>>.Success(systemDtos);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<SystemRegistryWithMenusDto>>.Failure($"Error retrieving system registries with menus: {ex.Message}");
+        }
+    }
+
     #region Audit
 
     public async Task<Result<bool>> RecordSystemRegistryAuditAsync(string action, string performedByUserId, object details)

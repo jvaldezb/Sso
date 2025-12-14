@@ -95,6 +95,19 @@ public class SystemRegistryController : ControllerBase
     }
 
     /// <summary>
+    /// Get all system registries with their menus
+    /// </summary>
+    [HttpGet("with-menus")]    
+    public async Task<IActionResult> GetAllWithMenus()
+    {
+        var result = await _systemRegistryService.GetAllWithMenusAsync();
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+
+        return Ok(result.Data);
+    }
+
+    /// <summary>
     /// Get a system registry by ID
     /// </summary>
     [HttpGet("{id}")]    
