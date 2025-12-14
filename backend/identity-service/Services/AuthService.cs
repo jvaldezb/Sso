@@ -81,21 +81,9 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         var systems = listSystemsRegistry.Select(sr => sr.SystemCode).ToList();
 
-        // 3. Generar access token Fase A
-        var (accessToken, expires, jti) = _tokenGenerator.GenerateCentralToken(user, systems, "global", 60);         
+        var jti = Guid.NewGuid().ToString();
 
-        var menuDtos = new List<MenuDto>();
-        if (listSystemsRegistry.Any(x => x.IsCentralAdmin == true))
-        {            
-            var menus = await _context.Menus
-                .Where(m => m.SystemId == ssoSystem.Id)
-                .OrderBy(m => m.OrderIndex)            
-                .ToListAsync();                
-
-            menuDtos = _mapper.Map<List<MenuDto>>(menus);
-        }                    
-
-        // 4. Registrar sesión
+        // 3. Registrar sesión
         var session = new UserSession
         {
             UserId = user.Id,
@@ -112,6 +100,22 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         await _userSessionRepository.AddAsync(session);
 
+        // 4. Generar access token Fase A
+        var (accessToken, expires) = _tokenGenerator.GenerateCentralToken(user, session, systems, "global", 60);         
+
+        var menuDtos = new List<MenuDto>();
+        if (listSystemsRegistry.Any(x => x.IsCentralAdmin == true))
+        {            
+            var menus = await _context.Menus
+                .Where(m => m.SystemId == ssoSystem.Id)
+                .OrderBy(m => m.OrderIndex)            
+                .ToListAsync();                
+
+            menuDtos = _mapper.Map<List<MenuDto>>(menus);
+        }   
+
+        var accessTokenexpiresAt = DateTime.UtcNow.AddMinutes(60);                 
+
         // 5. Generar el refresh token (nuevo)
         var refreshToken = _refreshTokenService.GenerateRefreshToken(ip, device);
         await _refreshTokenService.SaveRefreshTokenAsync(user, refreshToken);
@@ -122,7 +126,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             UserId = user.Id,
             FullName = user.FullName!,
             AccessToken = accessToken,
-            AccessTokenExpires = session.ExpiresAt,
+            AccessTokenExpires = accessTokenexpiresAt,
             RefreshToken = refreshToken.Token,
             RefreshTokenExpires = refreshToken.ExpiresAt,            
             SsoSystemId = ssoSystem.Id,            
@@ -181,16 +185,8 @@ private readonly IRefreshTokenService _refreshTokenService;
             .Select(r => r.Name!)
             .ToList();
 
-        // 4. Generar AccessToken del Sistema (Fase B)
-        var (accessToken, accessExpires, jti) =
-            _tokenGenerator.GenerateSystemToken(user, roleCodesForSystem, system.SystemCode, "read", 10);
-
-        // 5. Crear RefreshToken
-        var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(
-            user, 
-            ip, 
-            device
-        );
+        var jti = Guid.NewGuid().ToString();
+        var expireAt = DateTime.UtcNow.AddMinutes(10);    
 
         // 6. Registrar sesión del AccessToken de este sistema
         var session = new UserSession
@@ -202,12 +198,25 @@ private readonly IRefreshTokenService _refreshTokenService;
             Device = device,
             IpAddress = ip,
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = accessExpires,
+            ExpiresAt = expireAt,
             Audience = system.SystemCode,
             Scope = "read"
         };
 
-        await _userSessionRepository.AddAsync(session);
+        await _userSessionRepository.AddAsync(session);    
+
+        // 4. Generar AccessToken del Sistema (Fase B)
+        var (accessToken, accessExpires) =
+            _tokenGenerator.GenerateSystemToken(user, session, roleCodesForSystem, system.SystemCode, "read", 10);
+
+        // 5. Crear RefreshToken
+        var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(
+            user, 
+            ip, 
+            device
+        );
+
+        
 
         // 7. Respuesta Final
         return Result<AuthResponseDto>.Success(new AuthResponseDto
@@ -275,7 +284,7 @@ private readonly IRefreshTokenService _refreshTokenService;
                 .ToListAsync();
         }
 
-        var (token, expires, jti) = _tokenGenerator.GenerateCentralToken(user, systems, "global", 60); //GenerateJwtTokenCentral(user, "session", systems, "global", 60);
+        var jti = Guid.NewGuid().ToString();
 
         var session = new UserSession
         {
@@ -292,6 +301,8 @@ private readonly IRefreshTokenService _refreshTokenService;
         };
 
         await _userSessionRepository.AddAsync(session);
+
+        var (token, expires) = _tokenGenerator.GenerateCentralToken(user, session, systems, "global", 60);
 
         return Result<AccessTokenDto>.Success(new AccessTokenDto
         {
@@ -350,16 +361,8 @@ private readonly IRefreshTokenService _refreshTokenService;
             .Select(r => r.Name!)
             .ToListAsync();
 
-        // 5. Generar access token
-        var (token, expires, jti) = _tokenGenerator
-            .GenerateSystemToken(user, roles, systemName, scope ?? "read", 10);
-
-        // 6. Crear RefreshToken
-        var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(
-            user, 
-            ip, 
-            device
-        );    
+        var jti = Guid.NewGuid().ToString();
+        var expiresAt = DateTime.UtcNow.AddMinutes(10);
 
         // 7. Registrar sesión
         var sysSession = new UserSession
@@ -371,12 +374,23 @@ private readonly IRefreshTokenService _refreshTokenService;
             Device = device,
             IpAddress = ip,
             IssuedAt = DateTime.UtcNow,
-            ExpiresAt = expires,
+            ExpiresAt = expiresAt,
             Audience = systemName,
             Scope = scope
         };
 
-        await _userSessionRepository.AddAsync(sysSession);
+        await _userSessionRepository.AddAsync(sysSession);    
+
+        // 5. Generar access token
+        var (token, expires) = _tokenGenerator
+            .GenerateSystemToken(user, sysSession, roles, systemName, scope ?? "read", 10);
+
+        // 6. Crear RefreshToken
+        var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(
+            user, 
+            ip, 
+            device
+        );
 
         // 8. Respuesta
         return Result<AuthResponseDto>.Success(new AuthResponseDto
@@ -437,14 +451,8 @@ private readonly IRefreshTokenService _refreshTokenService;
                 .Select(r => r.Name!)
                 .ToListAsync();
 
-            var (accessToken, accessExpires, jti) =
-                _tokenGenerator.GenerateSystemToken(
-                    user,
-                    roles,
-                    req.System,
-                    req.Scope ?? "read",
-                    minutesValid: 10
-                );
+            var jti = Guid.NewGuid().ToString();
+            var expiresAt = DateTime.UtcNow.AddMinutes(10);
 
             var accessSession = new UserSession
             {
@@ -455,12 +463,24 @@ private readonly IRefreshTokenService _refreshTokenService;
                 Device = req.Device,
                 IpAddress = req.IpAddress,
                 IssuedAt = DateTime.UtcNow,
-                ExpiresAt = accessExpires,
+                ExpiresAt = expiresAt,
                 Audience = req.System,
                 Scope = req.Scope
             };
 
-            await _userSessionRepository.AddAsync(accessSession);
+            await _userSessionRepository.AddAsync(accessSession);    
+
+            var (accessToken, accessExpires) =
+                _tokenGenerator.GenerateSystemToken(
+                    user,
+                    accessSession,
+                    roles,
+                    req.System,
+                    req.Scope ?? "read",
+                    minutesValid: 10
+                );
+
+            
 
             return new RefreshTokenResponseDto
             {
@@ -509,13 +529,7 @@ private readonly IRefreshTokenService _refreshTokenService;
 
             var systemsCodes = systemsRegistry.Select(sr => sr.SystemCode).ToList();
 
-            var (accessToken, accessExpires, jti) =
-                _tokenGenerator.GenerateCentralToken(
-                    user,
-                    systemsCodes,
-                    "global",
-                    60
-                );
+            var jti = Guid.NewGuid().ToString();            
 
             var session = new UserSession
             {
@@ -526,12 +540,22 @@ private readonly IRefreshTokenService _refreshTokenService;
                 Device = req.Device,
                 IpAddress = req.IpAddress,
                 IssuedAt = DateTime.UtcNow,
-                ExpiresAt = accessExpires,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(60),
                 Audience = "sso-central",
                 Scope = "global"
             };
 
             await _userSessionRepository.AddAsync(session);
+
+
+            var (accessToken, accessExpires) =
+                _tokenGenerator.GenerateCentralToken(
+                    user,
+                    session,
+                    systemsCodes,
+                    "global",
+                    60
+                );            
 
             return new RefreshTokenResponseDto
             {

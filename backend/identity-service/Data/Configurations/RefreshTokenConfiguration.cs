@@ -23,9 +23,30 @@ public class RefreshTokenConfiguration: IEntityTypeConfiguration<RefreshToken>
         builder.Property(rt => rt.ExpiresAt).IsRequired();
         builder.Property(rt => rt.IsRevoked).IsRequired();
 
+        builder.Property(rt => rt.SystemId)
+            .HasColumnType("uuid")
+            .IsRequired(false);
+            
+        builder.Property(rt => rt.SessionId)
+            .HasColumnType("uuid")
+            .IsRequired(false);
+
         builder.HasOne(rt => rt.User)
             .WithMany(u => u.RefreshTokens)
             .HasForeignKey(rt => rt.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(rt => rt.System)
+            .WithMany()
+            .HasForeignKey(rt => rt.SystemId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(rt => rt.Session)
+            .WithMany()
+            .HasForeignKey(rt => rt.SessionId)
+            .OnDelete(DeleteBehavior.SetNull);   
+
+        builder.HasIndex(rt => rt.SystemId);
+        builder.HasIndex(rt => rt.SessionId);     
     }
 }

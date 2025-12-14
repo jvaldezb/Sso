@@ -18,22 +18,24 @@ public class TokenGenerator : ITokenGenerator
         _configuration = configuration;
     }
 
-    public (string Token, DateTime Expires, string Jti) GenerateCentralToken(
+    public (string Token, DateTime Expires) GenerateCentralToken(
         ApplicationUser user,
+        UserSession session,
         IEnumerable<string> systems,
         string scope,
         int minutesValid)
     {
-        var jti = Guid.NewGuid().ToString();
+        //var jti = Guid.NewGuid().ToString();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Secret"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expires = DateTime.UtcNow.AddMinutes(minutesValid);
+        var expires = DateTime.UtcNow.AddMinutes(minutesValid);        
 
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Jti, jti),
+            new Claim(JwtRegisteredClaimNames.Jti, session.JwtId),
+            new Claim(JwtRegisteredClaimNames.Sid, session.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim("token_type", "session"),            
             new Claim("scope", scope)
@@ -52,17 +54,17 @@ public class TokenGenerator : ITokenGenerator
             signingCredentials: creds
         );
 
-        return (new JwtSecurityTokenHandler().WriteToken(token), expires, jti);
+        return (new JwtSecurityTokenHandler().WriteToken(token), expires);
     }
 
-    public (string Token, DateTime Expires, string Jti) GenerateSystemToken(
+    public (string Token, DateTime Expires) GenerateSystemToken(
         ApplicationUser user,
+        UserSession session,
         IEnumerable<string> roles,
         string systemName,
         string scope,
         int minutesValid)
-    {
-        var jti = Guid.NewGuid().ToString();
+    {        
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Secret"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -71,7 +73,8 @@ public class TokenGenerator : ITokenGenerator
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Jti, jti),
+            new Claim(JwtRegisteredClaimNames.Jti, session.JwtId),
+            new Claim(JwtRegisteredClaimNames.Sid, session.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim("document_type", user.DocumentType!),
             new Claim("document_number", user.DocumentNumber!),
@@ -95,6 +98,6 @@ public class TokenGenerator : ITokenGenerator
             signingCredentials: creds
         );
 
-        return (new JwtSecurityTokenHandler().WriteToken(token), expires, jti);
+        return (new JwtSecurityTokenHandler().WriteToken(token), expires);
     }
 }

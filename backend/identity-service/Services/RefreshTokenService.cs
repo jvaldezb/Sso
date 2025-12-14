@@ -24,7 +24,7 @@ public class RefreshTokenService: IRefreshTokenService
     // ============================================================
     // 1) CREAR TOKEN ALEATORIO
     // ============================================================
-    public RefreshToken GenerateRefreshToken(string? ipAddress, string? deviceInfo)
+    public RefreshToken GenerateRefreshToken(string? ipAddress, string? deviceInfo, Guid? systemId = null, Guid? sessionId = null)
     {
         return new RefreshToken
         {
@@ -33,7 +33,9 @@ public class RefreshTokenService: IRefreshTokenService
             ExpiresAt = DateTime.UtcNow.AddDays(30),
             IpAddress = ipAddress,
             DeviceInfo = deviceInfo,
-            IsRevoked = false
+            IsRevoked = false,
+            SystemId = systemId,
+            SessionId = sessionId 
         };
     }
 

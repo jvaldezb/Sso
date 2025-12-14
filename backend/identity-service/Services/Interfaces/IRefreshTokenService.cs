@@ -8,7 +8,8 @@ public interface IRefreshTokenService
     /// <summary>
     /// Genera un nuevo Refresh Token seguro y aleatorio.
     /// </summary>
-    RefreshToken GenerateRefreshToken(string? ipAddress, string? deviceInfo);
+    RefreshToken GenerateRefreshToken(string? ipAddress, string? deviceInfo,
+        Guid? systemId = null, Guid? sessionId = null);
 
     /// <summary>
     /// Guarda un Refresh Token asociado a un usuario.

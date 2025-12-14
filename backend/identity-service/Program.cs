@@ -165,6 +165,7 @@ builder.Services.AddScoped<IRoleClaimEncoderService, RoleClaimEncoderService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IExchangeTokenService, ExchangeTokenService>();
 
 var app = builder.Build();
 

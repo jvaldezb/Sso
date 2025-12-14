@@ -19,4 +19,10 @@ public class UserSessionRepository : BaseRepository<UserSession>, IUserSessionRe
             .OrderByDescending(s => s.IssuedAt)
             .ToListAsync();
     }
+
+    public async Task<bool> IsActiveAsync(Guid sessionId)
+    {
+        return await Query()
+            .AnyAsync(s => s.Id == sessionId && !s.IsRevoked && s.ExpiresAt > DateTime.UtcNow);
+    }
 }
