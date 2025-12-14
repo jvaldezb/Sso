@@ -10,6 +10,7 @@ public class Menu : EntityBase
     public short Level { get; set; } = 1;
     public string? Module { get; set; }
     public string? ModuleType { get; set; }
+    public string? MenuType { get; set; }
     public string? RequiredClaimType { get; set; }
     public int RequiredClaimMinValue { get; set; } = 4;
     public string? IconUrl { get; set; }

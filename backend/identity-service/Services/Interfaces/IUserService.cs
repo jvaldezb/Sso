@@ -10,9 +10,7 @@ public interface IUserService
 {
     public Task<Result<UserResponseDto>> registerAsync(UserForCreateDto loginDto); 
     Task<Result<UserResponseDto>> UpdateAsync(string performedByUserId, Guid userId, UserForUpdateDto dto);
-    public Task<PaginatedList<UserResponseDto>> GetUsersAsync(int pageNumber, int pageSize);
-    
-    public Task<(string token, DateTime expires)> GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip);
+    public Task<PaginatedList<UserResponseDto>> GetUsersAsync(int pageNumber, int pageSize);        
 
     public Task<Result<bool>> ValidateTokenAsync(string token);
     

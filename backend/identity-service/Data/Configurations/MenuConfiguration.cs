@@ -17,11 +17,12 @@ public class MenuConfiguration : IEntityTypeConfiguration<Menu>
 
         builder.Property(x => x.MenuLabel).HasMaxLength(50).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(150);
-        builder.Property(x => x.Module).HasMaxLength(50);
-        builder.Property(x => x.ModuleType).HasMaxLength(25);
+        builder.Property(x => x.Module).HasColumnType("text");
+        builder.Property(x => x.ModuleType).HasColumnType("text");
+        builder.Property(x => x.MenuType).HasColumnType("text");
         builder.Property(x => x.RequiredClaimType).HasColumnType("text");
-        builder.Property(x => x.IconUrl).HasMaxLength(200);
-        builder.Property(x => x.AccessScope).HasMaxLength(15);
+        builder.Property(x => x.IconUrl).HasColumnType("text");
+        builder.Property(x => x.AccessScope).HasMaxLength(25);
         builder.Property(x => x.UserUpdate).HasColumnType("text");
         builder.Property(x => x.UserCreate).HasColumnType("text");
 

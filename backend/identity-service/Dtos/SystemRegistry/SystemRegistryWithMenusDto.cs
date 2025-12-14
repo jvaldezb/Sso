@@ -29,6 +29,7 @@ public class MenuDetailsDto
     public short Level { get; set; }
     public string? Module { get; set; }
     public string? ModuleType { get; set; }
+    public string? MenuType { get; set; }
     public string? IconUrl { get; set; }
     public string? AccessScope { get; set; }
     public short OrderIndex { get; set; }
