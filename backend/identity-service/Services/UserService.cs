@@ -59,11 +59,10 @@ public class UserService : IUserService
 
     public async Task<Result<UserResponseDto>> registerAsync(UserForCreateDto userDto)
     {
-        // Validar si rol existe
-        var role = await _roleManager.FindByIdAsync(userDto.RoleId.ToString());
-        if (role == null)
-            return Result<UserResponseDto>.Failure("El rol especificado no existe.");
-
+        // Validar arrary de roles
+        if (userDto.RoleIds == null || !userDto.RoleIds.Any())
+            return Result<UserResponseDto>.Failure("At least one role must be specified.");
+        
         // Mapear a Identity User
         var user = _mapper.Map<ApplicationUser>(userDto);
 
@@ -73,24 +72,36 @@ public class UserService : IUserService
             return Result<UserResponseDto>.Failure(
                 string.Join(", ", result.Errors.Select(e => e.Description))
             );
+        
+        // Validar que todos los roles existen
+        var rolesList = new List<ApplicationRole>();
+        foreach (var roleId in userDto.RoleIds)
+        {
+            var role = await _roleManager.FindByIdAsync(roleId.ToString());
+            if (role == null)
+                return Result<UserResponseDto>.Failure($"El rol con ID {roleId} no existe.");
+            rolesList.Add(role);
+        }
 
-        // Asignar rol
-        var assignRole = await _userManager.AddToRoleAsync(user, role.Name!);
-        if (!assignRole.Succeeded)
+        // Asignar roles al usuario
+        var roleNames = rolesList.Select(r => r.Name!).ToList();
+        var assignRolesResult = await _userManager.AddToRolesAsync(user, roleNames);
+        if (!assignRolesResult.Succeeded)
         {
             // rollback
             await _userManager.DeleteAsync(user);
 
             return Result<UserResponseDto>.Failure(
-                string.Join(", ", assignRole.Errors.Select(e => e.Description))
+                string.Join(", ", assignRolesResult.Errors.Select(e => e.Description))
             );
-        }
+        }        
+
+        // TODO: Registrar auditoría
 
         // Mapear respuesta
         var userResponse = _mapper.Map<UserResponseDto>(user);
         userResponse.Id = user.Id;
-        userResponse.RoleId = Guid.Parse(role.Id);
-        userResponse.RoleName = role.Name!;
+        userResponse.Roles = _mapper.Map<List<UserRoleDto>>(rolesList);
 
         return Result<UserResponseDto>.Success(userResponse);
     }
@@ -107,11 +118,16 @@ public class UserService : IUserService
         if (user == null)
             return Result<UserResponseDto>.Failure("Usuario no encontrado.");
 
-        // Validar si el nuevo rol existe
-        var role = await _roleManager.FindByIdAsync(dto.RoleId.ToString());
-        if (role == null)
-            return Result<UserResponseDto>.Failure("El rol especificado no existe.");
-
+        // Validar que todos los roles existen
+        var rolesList = new List<ApplicationRole>();
+        foreach (var roleId in dto.RoleIds)
+        {
+            var role = await _roleManager.FindByIdAsync(roleId.ToString());
+            if (role == null)
+                return Result<UserResponseDto>.Failure($"El rol con ID {roleId} no existe.");
+            rolesList.Add(role);
+        }
+            
         // Actualizar campos básicos
         user.FullName = dto.FullName;
         user.UserName = dto.UserName;
@@ -147,26 +163,24 @@ public class UserService : IUserService
         // Obtener roles actuales del usuario
         var currentRoles = await _userManager.GetRolesAsync(user);
         
-        // Si el rol cambió, actualizar
-        if (!currentRoles.Contains(role.Name!))
+        // borrar roles actuales y asignar nuevos roles
+        if (currentRoles.Any())
         {
-            // Remover roles actuales
-            if (currentRoles.Any())
-            {
-                var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                if (!removeRolesResult.Succeeded)
-                    return Result<UserResponseDto>.Failure(
-                        string.Join(", ", removeRolesResult.Errors.Select(e => e.Description))
-                    );
-            }
-
-            // Asignar nuevo rol
-            var addRoleResult = await _userManager.AddToRoleAsync(user, role.Name!);
-            if (!addRoleResult.Succeeded)
+            var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeRolesResult.Succeeded)
                 return Result<UserResponseDto>.Failure(
-                    string.Join(", ", addRoleResult.Errors.Select(e => e.Description))
+                    string.Join(", ", removeRolesResult.Errors.Select(e => e.Description))
                 );
         }
+
+        // Asignar los nuevos roles
+        var roleNames = rolesList.Select(r => r.Name!).ToList();
+        var addRolesResult = await _userManager.AddToRolesAsync(user, roleNames);
+        if (!addRolesResult.Succeeded)
+            return Result<UserResponseDto>.Failure(
+                string.Join(", ", addRolesResult.Errors.Select(e => e.Description))
+            );
+        
 
         // Registrar auditoría
         await RecordAuditEventAsync(
@@ -174,14 +188,13 @@ public class UserService : IUserService
             "USER_UPDATE",
             null,
             null,
-            new { UserId = userId.ToString(), PerformedByUser = performedByUser.UserName, UpdatedFields = new { dto.FullName, dto.UserName, dto.Email, dto.DocumentType, dto.DocumentNumber, RoleId = dto.RoleId } }
+            new { UserId = userId.ToString(), PerformedByUser = performedByUser.UserName, UpdatedFields = new { dto.FullName, dto.UserName, dto.Email, dto.DocumentType, dto.DocumentNumber, Roles = roleNames } }
         );
 
         // Mapear respuesta
         var userResponse = _mapper.Map<UserResponseDto>(user);
         userResponse.Id = user.Id;
-        userResponse.RoleId = Guid.Parse(role.Id);
-        userResponse.RoleName = role.Name!;
+        userResponse.Roles = _mapper.Map<List<UserRoleDto>>(rolesList);        
 
         return Result<UserResponseDto>.Success(userResponse);
     }
@@ -216,6 +229,20 @@ public class UserService : IUserService
                     primaryRoleId = parsedRoleId;
             }
 
+            // obtener roles del usuario
+            var userRoles = await _userManager.GetRolesAsync(user);
+
+            // mapear userRoleDto list
+            var roleEntities = new List<ApplicationRole>();
+            foreach (var roleName in userRoles)
+            {
+                var roleEntity = await _roleManager.FindByNameAsync(roleName);
+                if (roleEntity != null)
+                    roleEntities.Add(roleEntity);
+            }
+
+            var userRoleDtos = _mapper.Map<List<UserRoleDto>>(roleEntities);
+            
             userDtos.Add(new UserResponseDto
             {
                 Id = user.Id,
@@ -225,55 +252,13 @@ public class UserService : IUserService
                 DocumentType = user.DocumentType!,
                 DocumentNumber = user.DocumentNumber!,
                 IsEnabled = user.IsEnabled!,
-                RoleId = primaryRoleId,
+                Roles = userRoleDtos,
                 RoleName = primaryRoleName ?? string.Empty
             });
         }
 
         // Return paginated list
         return new PaginatedList<UserResponseDto>(userDtos, totalCount, pageNumber, pageSize);
-    }
-
-    public async Task<(string token, DateTime expires)> GenerateAccessTokenAsync(string userId, string sessionJti, string systemName, string? scope, string device, string? ip)
-    {
-        var session = await _context.UserSessions
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.JwtId == sessionJti && s.TokenType == "session" && !s.IsRevoked);
-
-        if (session == null)
-            throw new UnauthorizedAccessException("Invalid or expired session token");
-
-        var user = await _userManager.FindByIdAsync(userId)
-            ?? throw new Exception("User not found");   
-        
-        // obtener ids de sistemas
-        var system = await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.SystemCode == systemName);
-
-        // obtener roles del usuario
-        var userRoles = await _roleManager.Roles
-            .Where(r => r.SystemId == system!.Id)
-            .Select(r => r.Name!)
-            .ToListAsync();
-
-        var (token, expires, jti) = _tokenGenerator.GenerateSystemToken(user, userRoles, systemName, scope ?? "read", 10);  //GenerateJwtTokenSystem(user, userRoles, "access", systemName, scope ?? "read", 10);
-
-        var accessSession = new UserSession
-        {
-            UserId = userId,
-            JwtId = jti,
-            TokenType = "access",
-            SystemName = systemName,
-            Device = device,
-            IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-            Audience = systemName,
-            Scope = scope
-        };
-
-        _context.UserSessions.Add(accessSession);
-        await _context.SaveChangesAsync();
-
-        return (token, accessSession.ExpiresAt);
     }    
 
     public async Task<Result<bool>> ValidateTokenAsync(string token)

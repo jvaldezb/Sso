@@ -11,5 +11,5 @@ public class UserForCreateDto
     public required string Password { get; set; }
     public required string DocumentType { get; set; }
     public required string DocumentNumber { get; set; }
-    public required Guid RoleId { get; set; }
+    public List<Guid> RoleIds { get; set; } = new();
 }
