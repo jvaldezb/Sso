@@ -18,6 +18,6 @@ public class SystemRegistryDto
     public DateTimeOffset? LastSync { get; set; }
     public string? UserCreate { get; set; }
     public string? UserUpdate { get; set; }
-    public DateTime DateCreate { get; set; }
-    public DateTime DateUpdate { get; set; }
+    public DateTimeOffset? DateCreate { get; set; }
+    public DateTimeOffset? DateUpdate { get; set; }
 }
