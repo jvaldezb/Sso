@@ -23,14 +23,17 @@ public class ExchangeTokenConfiguration : IEntityTypeConfiguration<ExchangeToken
             builder.Property(x => x.SessionId)
                    .IsRequired();
 
-            builder.Property(x => x.ExpiresAt)                   
-                   .IsRequired();
+            builder.Property(x => x.ExpiresAt)
+            .HasColumnType("timestamptz")
+            .IsRequired();
 
-            builder.Property(x => x.UsedAt);
+            builder.Property(x => x.UsedAt)
+            .HasColumnType("timestamptz");                     
                    
             builder.Property(x => x.CreatedAt)                   
-                   .HasDefaultValueSql("now()")
-                   .IsRequired();
+           .HasColumnType("timestamptz")
+           .HasDefaultValueSql("now()")
+           .IsRequired();
 
             builder.Property(x => x.IpAddress);
 
@@ -41,7 +44,7 @@ public class ExchangeTokenConfiguration : IEntityTypeConfiguration<ExchangeToken
                    .HasDatabaseName("idx_exchange_tokens_expires_at");
 
             builder.HasIndex(x => x.Jti)
-                   .HasDatabaseName("idx_exchange_tokens_unused")
+                   .HasDatabaseName("idx_exchange_tokens_jti_unused")
                    .HasFilter("used_at IS NULL");
     }
 }

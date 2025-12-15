@@ -8,7 +8,7 @@ public class AccessTokenDto
     public required string UserId { get; set; }
     public required string FullName { get; set; }
     public required string Token { get; set; }
-    public required DateTime Expires { get; set; }
+    public required DateTimeOffset Expires { get; set; }
     public required List<SystemRegistryResponseDto> Systems { get; set; }
 }
 

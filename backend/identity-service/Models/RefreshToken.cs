@@ -8,10 +8,10 @@ public class RefreshToken: EntityBase
     public Guid? SystemId { get; set; }
     public Guid? SessionId { get; set; }  
     public string Token { get; set; } = null!;
-    public DateTime CreatedAt { get; set; }          
-    public DateTime ExpiresAt { get; set; }          
+    public DateTimeOffset CreatedAt { get; set; }          
+    public DateTimeOffset ExpiresAt { get; set; }          
     public bool IsRevoked { get; set; }
-    public DateTime? RevokedAt { get; set; }         
+    public DateTimeOffset? RevokedAt { get; set; }         
 
     public string? ReplacedByToken { get; set; }
     public string? DeviceInfo { get; set; }

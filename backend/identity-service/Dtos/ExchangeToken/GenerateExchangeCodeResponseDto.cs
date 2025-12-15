@@ -5,5 +5,5 @@ namespace identity_service.Dtos.ExchangeToken;
 public class GenerateExchangeCodeResponseDto
 {
     public string ExchangeCode { get; set; } = default!;
-    public DateTime ExpiresAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
 }

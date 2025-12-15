@@ -6,6 +6,6 @@ public class ExchangeResponseDto
 {
     public string AccessToken { get; set; } = default!;
     public string RefreshToken { get; set; } = default!;
-    public DateTime ExpiresAt { get; set; }
-    public string TokenType { get; set; } = "Bearer";
+    public DateTimeOffset ExpiresAt { get; set; }
+    public string AuthorizationScheme { get; set; } = "Bearer";
 }

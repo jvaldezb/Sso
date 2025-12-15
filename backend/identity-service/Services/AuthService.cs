@@ -92,8 +92,8 @@ private readonly IRefreshTokenService _refreshTokenService;
             SystemName = "SSO-CENTRAL",
             Device = device.Length > 500 ? device.Substring(0, 500) : device,
             IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            IssuedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(60),
             Audience = "sso-central",
             Scope = "global"
         };
@@ -114,7 +114,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             menuDtos = _mapper.Map<List<MenuDto>>(menus);
         }   
 
-        var accessTokenexpiresAt = DateTime.UtcNow.AddMinutes(60);                 
+        var accessTokenexpiresAt = DateTimeOffset.UtcNow.AddMinutes(60);                 
 
         // 5. Generar el refresh token (nuevo)
         var refreshToken = _refreshTokenService.GenerateRefreshToken(ip, device);
@@ -186,7 +186,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             .ToList();
 
         var jti = Guid.NewGuid().ToString();
-        var expireAt = DateTime.UtcNow.AddMinutes(10);    
+        var expireAt = DateTimeOffset.UtcNow.AddMinutes(10);    
 
         // 6. Registrar sesión del AccessToken de este sistema
         var session = new UserSession
@@ -197,7 +197,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             SystemName = system.SystemCode,
             Device = device,
             IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
+            IssuedAt = DateTimeOffset.UtcNow,
             ExpiresAt = expireAt,
             Audience = system.SystemCode,
             Scope = "read"
@@ -214,9 +214,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             user, 
             ip, 
             device
-        );
-
-        
+        );        
 
         // 7. Respuesta Final
         return Result<AuthResponseDto>.Success(new AuthResponseDto
@@ -294,8 +292,8 @@ private readonly IRefreshTokenService _refreshTokenService;
             SystemName = "SSO-CENTRAL",
             Device = device,
             IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            IssuedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(60),
             Audience = "sso-central",
             Scope = "global"
         };
@@ -362,7 +360,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             .ToListAsync();
 
         var jti = Guid.NewGuid().ToString();
-        var expiresAt = DateTime.UtcNow.AddMinutes(10);
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
 
         // 7. Registrar sesión
         var sysSession = new UserSession
@@ -373,7 +371,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             SystemName = systemName,
             Device = device,
             IpAddress = ip,
-            IssuedAt = DateTime.UtcNow,
+            IssuedAt = DateTimeOffset.UtcNow,
             ExpiresAt = expiresAt,
             Audience = systemName,
             Scope = scope
@@ -452,7 +450,7 @@ private readonly IRefreshTokenService _refreshTokenService;
                 .ToListAsync();
 
             var jti = Guid.NewGuid().ToString();
-            var expiresAt = DateTime.UtcNow.AddMinutes(10);
+            var expiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
 
             var accessSession = new UserSession
             {
@@ -462,7 +460,7 @@ private readonly IRefreshTokenService _refreshTokenService;
                 SystemName = req.System,
                 Device = req.Device,
                 IpAddress = req.IpAddress,
-                IssuedAt = DateTime.UtcNow,
+                IssuedAt = DateTimeOffset.UtcNow,
                 ExpiresAt = expiresAt,
                 Audience = req.System,
                 Scope = req.Scope
@@ -539,8 +537,8 @@ private readonly IRefreshTokenService _refreshTokenService;
                 SystemName = "SSO-CENTRAL",
                 Device = req.Device,
                 IpAddress = req.IpAddress,
-                IssuedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+                IssuedAt = DateTimeOffset.UtcNow,
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(60),
                 Audience = "sso-central",
                 Scope = "global"
             };
@@ -594,7 +592,7 @@ private readonly IRefreshTokenService _refreshTokenService;
         foreach (var session in list)
         {
             session.IsRevoked = true;
-            session.RevokedAt = DateTime.UtcNow;
+            session.RevokedAt = DateTimeOffset.UtcNow;
         }
 
         await _context.SaveChangesAsync();
@@ -618,7 +616,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             EventType = eventType,
             IpAddress = ipAddress,
             UserAgent = userAgent,
-            EventDate = DateTime.UtcNow,
+            EventDate = DateTimeOffset.UtcNow,
             Details = details != null
                 ? JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(details))
                 : null
@@ -654,9 +652,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             .Select(r => r.SystemId)
             .Where(id => id.HasValue)
             .Select(id => id!.Value)
-            .ToList();
-
-          
+            .ToList();          
 
         var listSystemsRegistry = new List<SystemRegistry>();
 

@@ -17,6 +17,7 @@ public class AuthAuditLogConfiguration : IEntityTypeConfiguration<AuthAuditLog>
 
         builder.Property(x => x.ProviderName).HasMaxLength(50);
         builder.Property(x => x.EventType).HasMaxLength(50);
+        builder.Property(x => x.EventDate).HasColumnType("timestamptz").IsRequired();
         builder.Property(x => x.IpAddress).HasMaxLength(50);
         builder.Property(x => x.UserAgent).HasColumnType("text");
         builder.Property(x => x.Details).HasColumnType("jsonb");

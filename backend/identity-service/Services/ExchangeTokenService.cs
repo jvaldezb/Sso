@@ -48,8 +48,8 @@ public class ExchangeTokenService : IExchangeTokenService
             SystemId = systemId,
             UserId = userId,
             SessionId = sessionId,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(5), // Exchange codes expire in 5 minutes
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5), // Exchange codes expire in 5 minutes
             IpAddress = ipAddress,
             UserAgent = userAgent
         };
@@ -86,13 +86,13 @@ public class ExchangeTokenService : IExchangeTokenService
                 x.Jti == jti && 
                 x.SystemId == systemId &&
                 x.UsedAt == null &&
-                x.ExpiresAt > DateTime.UtcNow);
+                x.ExpiresAt > DateTimeOffset.UtcNow);
 
         if (exchangeToken == null)
             throw new UnauthorizedException("Codigo de intercambio invalido, usado o expirado");
 
         // Mark as used immediately
-        exchangeToken.UsedAt = DateTime.UtcNow;
+        exchangeToken.UsedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
 
         // 4. Get user information
@@ -125,7 +125,7 @@ public class ExchangeTokenService : IExchangeTokenService
 
         // 7. Create user session for access token
         var jtiAccess = Guid.NewGuid().ToString();
-        var expire = DateTime.UtcNow.AddMinutes(10);
+        var expire = DateTimeOffset.UtcNow.AddMinutes(10);
 
         var accessSession = new UserSession
         {
@@ -135,7 +135,7 @@ public class ExchangeTokenService : IExchangeTokenService
             SystemName = system.SystemCode,
             Device = exchangeToken.UserAgent ?? "Unknown",
             IpAddress = exchangeToken.IpAddress,
-            IssuedAt = DateTime.UtcNow,
+            IssuedAt = DateTimeOffset.UtcNow,
             ExpiresAt = expire,
             Audience = system.SystemCode,
             Scope = "read",
@@ -170,7 +170,7 @@ public class ExchangeTokenService : IExchangeTokenService
             AccessToken = accessToken,
             RefreshToken = refreshToken.Token,
             ExpiresAt = expiresAt,
-            TokenType = "Bearer"
+            AuthorizationScheme = "Bearer"
         };
     }
 }

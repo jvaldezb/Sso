@@ -52,7 +52,7 @@ public class ExchangeTokenController : ControllerBase
             return Ok(new GenerateExchangeCodeResponseDto
             {
                 ExchangeCode = exchangeCode,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(5)
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
             });
         }
         catch (Exception ex)

@@ -18,7 +18,7 @@ public class TokenGenerator : ITokenGenerator
         _configuration = configuration;
     }
 
-    public (string Token, DateTime Expires) GenerateCentralToken(
+    public (string Token, DateTimeOffset Expires) GenerateCentralToken(
         ApplicationUser user,
         UserSession session,
         IEnumerable<string> systems,
@@ -29,7 +29,7 @@ public class TokenGenerator : ITokenGenerator
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Secret"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expires = DateTime.UtcNow.AddMinutes(minutesValid);        
+        var expires = DateTimeOffset.UtcNow.AddMinutes(minutesValid);        
 
         var claims = new List<Claim>
         {
@@ -50,14 +50,14 @@ public class TokenGenerator : ITokenGenerator
             issuer: _configuration["JWTSettings:ValidIssuer"],
             audience: _configuration["JWTSettings:ValidAudience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(minutesValid),
+            expires: expires.UtcDateTime,
             signingCredentials: creds
         );
 
         return (new JwtSecurityTokenHandler().WriteToken(token), expires);
     }
 
-    public (string Token, DateTime Expires) GenerateSystemToken(
+    public (string Token, DateTimeOffset Expires) GenerateSystemToken(
         ApplicationUser user,
         UserSession session,
         IEnumerable<string> roles,
@@ -68,7 +68,7 @@ public class TokenGenerator : ITokenGenerator
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Secret"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expires = DateTime.UtcNow.AddMinutes(minutesValid);
+        var expires = DateTimeOffset.UtcNow.AddMinutes(minutesValid);
 
         var claims = new List<Claim>
         {
@@ -94,7 +94,7 @@ public class TokenGenerator : ITokenGenerator
             issuer: _configuration["JWTSettings:ValidIssuer"],
             audience: systemName,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(minutesValid),
+            expires: expires.UtcDateTime,
             signingCredentials: creds
         );
 

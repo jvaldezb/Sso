@@ -11,7 +11,7 @@ public class AuthAuditLog : EntityBase
     public string? EventType { get; set; }    
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
-    public DateTime EventDate { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset EventDate { get; set; } = DateTimeOffset.UtcNow;
     public JsonDocument? Details { get; set; }    
 
     // Navigation property    
