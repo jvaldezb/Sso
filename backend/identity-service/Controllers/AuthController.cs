@@ -75,7 +75,7 @@ namespace identity_service.Controllers
             var device = Request.Headers["User-Agent"].ToString();
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            var result = await _authService.GenerateSystemAccessTokenAsync(userId, jti, dto.SystemName, dto.Scope, device, ip);
+            var result = await _authService.GenerateSystemAccessTokenAsync(userId, jti, dto.SystemName, dto.Scope ?? "read", device, ip ?? "Unknown");
 
             if (!result.IsSuccess)
                 return Unauthorized(result.ErrorMessage);

@@ -52,7 +52,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     if (builder.Environment.IsProduction())
     {
         // Se pueden usar variables de entorno para sustituir los valores en la cadena de conexión
-        connectionString = connectionString.Replace("${DB_NAME}", Environment.GetEnvironmentVariable("DB_NAME"))
+        connectionString = connectionString!.Replace("${DB_NAME}", Environment.GetEnvironmentVariable("DB_NAME"))
                                              .Replace("${DB_USERNAME}", Environment.GetEnvironmentVariable("DB_USERNAME"))
                                              .Replace("${DB_PASSWORD}", Environment.GetEnvironmentVariable("DB_PASSWORD"));
     }

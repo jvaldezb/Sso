@@ -1,0 +1,30 @@
+```mermaid
+sequenceDiagram
+    autonumber
+
+    participant Front as Front-SSO (Cliente Web)
+    participant Back as Back-SSO (API Auth)
+    participant DB as DB SSO (Users/Tokens)
+
+    Note over Front: El access_token expira<br/>o el backend responde 401
+
+    Front->>Back: POST /auth/refresh-token<br/>(Cookie HTTPOnly o Header)
+    Back->>DB: Validar Refresh Token
+    DB-->>Back: Resultado validación
+
+    alt Refresh token inválido o revocado
+        Back-->>Front: 401 Unauthorized<br/>Refresh inválido
+        Front->>Front: Cerrar sesión local<br/>Redirigir a login
+    else Refresh token expirado
+        Back-->>Front: 401 TokenExpired<br/>Requiere login manual
+        Front->>Front: Mostrar formulario de Login
+    else Refresh token válido
+        Note over Back: Refresh token es válido<br/>→ No requiere login
+        Back->>Back: Generar nuevo Access Token (Fase A)
+        Back->>Back: Generar nuevo Refresh Token (rotación)
+        Back->>DB: Guardar Refresh Token nuevo<br/>Invalidar el anterior
+        DB-->>Back: OK
+        Back-->>Front: 200 OK<br/>{ access_token } + nuevo refresh_token
+        Front->>Front: Actualizar sesión<br/>Continuar flujo normal
+    end
+```
