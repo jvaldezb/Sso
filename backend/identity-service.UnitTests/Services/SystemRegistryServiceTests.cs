@@ -224,7 +224,8 @@ public class SystemRegistryServiceTests
             BaseUrl: "https://updated.com",
             IconUrl: "https://icon.com/icon.png",
             Category: "new-category",
-            ContactEmail: "updated@b.com"
+            ContactEmail: "updated@b.com",
+            ApiKey: null
         );
 
         // Act
@@ -269,7 +270,8 @@ public class SystemRegistryServiceTests
             BaseUrl: "https://example",
             IconUrl: null,
             Category: null,
-            ContactEmail: null
+            ContactEmail: null,
+            ApiKey: null
         );
 
         // Act

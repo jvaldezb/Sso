@@ -58,4 +58,9 @@ public class ServiceTestFixture
     {
         return new Mock<IEmailService>();
     }
+
+    public Mock<IRefreshTokenService> CreateRefreshTokenServiceMock()
+    {
+        return new Mock<IRefreshTokenService>();
+    }
 }
