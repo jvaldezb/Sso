@@ -11,7 +11,9 @@ public class RoleDto
     public string? SystemName { get; set; }
     public string? UserCreate { get; set; }
     public string? UserUpdate { get; set; }
-    public DateTime? DateCreate { get; set; }
-    public DateTime? DateUpdate { get; set; }
+    public string? UserCreateName { get; set; }
+    public string? UserUpdateName { get; set; }
+    public DateTimeOffset? DateCreate { get; set; }
+    public DateTimeOffset? DateUpdate { get; set; }
     public bool IsEnabled { get; set; }
 }

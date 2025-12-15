@@ -180,6 +180,34 @@ public class RoleService : IRoleService
                 }
             }
 
+            // Enrich RoleDto with UserCreateName and UserUpdateName
+            var userIds = roles
+                .SelectMany(r => new[] { r.UserCreate, r.UserUpdate })
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct()
+                .ToList();
+                
+            if (userIds.Count > 0)
+            {
+                var users = await _context.Users
+                    .Where(u => userIds.Contains(u.Id))
+                    .ToListAsync();
+
+                var usersById = users.ToDictionary(u => u.Id, u => u.UserName);
+
+                foreach (var dto in roleDtos)
+                {
+                    if (!string.IsNullOrEmpty(dto.UserCreate) && usersById.TryGetValue(dto.UserCreate, out var createName))
+                    {
+                        dto.UserCreateName = createName;
+                    }
+                    if (!string.IsNullOrEmpty(dto.UserUpdate) && usersById.TryGetValue(dto.UserUpdate, out var updateName))
+                    {
+                        dto.UserUpdateName = updateName;
+                    }
+                }
+            }
+
             return Result<PaginatedList<RoleDto>>.Success(
                 new PaginatedList<RoleDto>(roleDtos, totalCount, page, size));
         }
