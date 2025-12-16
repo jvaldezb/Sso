@@ -8,4 +8,5 @@ public class AuthResponseSsoDto : AuthResponseDto
 
     public List<MenuDto> Menus { get; set; } = new();
 
+    public List<AuthRoleDto> Roles { get; set; } = new();
 }
