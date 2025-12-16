@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Folder Include="Dtos/ExchangeToken/" />
+    <Folder Include="Dtos/RoleMenu/" />
     <Folder Include="Extensions/" />
     <Folder Include="Validations/User/" />
   </ItemGroup>

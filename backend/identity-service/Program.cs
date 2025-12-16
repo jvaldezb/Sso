@@ -153,6 +153,7 @@ builder.Services.AddScoped<IAuthAuditLogRepository, AuthAuditLogRepository>();
 builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddScoped<IMenuRepository, MenuRepository>();
 builder.Services.AddScoped<ISystemRegistryRepository, SystemRegistryRepository>();
+builder.Services.AddScoped<IRoleMenuRepository, RoleMenuRepository>();
 
 // Services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -166,6 +167,7 @@ builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExchangeTokenService, ExchangeTokenService>();
+builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
 
 var app = builder.Build();
 
