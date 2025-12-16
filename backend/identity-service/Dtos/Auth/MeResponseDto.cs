@@ -10,5 +10,6 @@ public class MeResponseDto
     public Guid SsoSystemId { get; set; }
 
     public List<MenuDto> Menus { get; set; } = new();
+    public List<AuthRoleDto> Roles { get; set; } = new();
     public required List<SystemRegistryResponseDto> Systems { get; set; }
 }

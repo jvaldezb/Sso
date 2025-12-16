@@ -120,7 +120,16 @@ private readonly IRefreshTokenService _refreshTokenService;
         var refreshToken = _refreshTokenService.GenerateRefreshToken(ip, device);
         await _refreshTokenService.SaveRefreshTokenAsync(user, refreshToken);
 
-        // 6. Retornar access + refresh token
+        // 6. Roles para todos los sistemas
+        var ssoRoles = roles            
+            .Select(r => new AuthRoleDto
+            {
+                RoleId = r.Id,
+                RoleName = r.Name!
+            })
+            .ToList();
+
+        // 7. Retornar access + refresh token
         var result = new AuthResponseSsoDto
         {
             UserId = user.Id,
@@ -142,7 +151,8 @@ private readonly IRefreshTokenService _refreshTokenService;
                 ContactEmail = sr.ContactEmail
             }
             ).ToList(),
-            Menus = menuDtos
+            Menus = menuDtos,
+            Roles = ssoRoles
         };
 
         return Result<AuthResponseSsoDto>.Success(result);
@@ -674,6 +684,15 @@ private readonly IRefreshTokenService _refreshTokenService;
             menuDtos = _mapper.Map<List<MenuDto>>(menus);
         }   
 
+        // Roles para todos los sistemas
+        var ssoRoles = roles
+            .Select(r => new AuthRoleDto
+            {
+                RoleId = r.Id,
+                RoleName = r.Name!
+            })
+            .ToList();
+
         // IMPORTANTE:
         // El endpoint /me NO genera nuevo token.
         // Solo devuelve la misma info del login.
@@ -695,7 +714,8 @@ private readonly IRefreshTokenService _refreshTokenService;
                     ContactEmail = sr.ContactEmail
                 })
                 .ToList(),
-            Menus = menuDtos
+            Menus = menuDtos,
+            Roles = ssoRoles
         });
     }
 }
