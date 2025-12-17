@@ -12,12 +12,12 @@ namespace identity_service.Services;
 
 public class RoleMenuService : IRoleMenuService
 {
-    private readonly IRoleMenuRepository _repository;
+    private readonly IRoleMenuRepository _roleMenuRepository;
     private readonly IMenuRepository _menuRepository;
 
-    public RoleMenuService(IRoleMenuRepository repository, IMenuRepository menuRepository)
+    public RoleMenuService(IRoleMenuRepository roleMenuRepository, IMenuRepository menuRepository)
     {
-        _repository = repository;
+        _roleMenuRepository = roleMenuRepository;
         _menuRepository = menuRepository;
     }
 
@@ -28,13 +28,13 @@ public class RoleMenuService : IRoleMenuService
             if (page < 1) page = 1;
             if (size < 1) size = 10;
 
-            var query = _repository.Query();
+            var query = _roleMenuRepository.Query();
             var total = query.Count();
             var items = query.Skip((page - 1) * size).Take(size).ToList();
 
             var dtos = items.Select(rm => new RoleMenuResponseDto
             {
-                Id = rm.Id,
+                RoleMenuId = rm.Id,
                 RoleId = rm.RoleId,
                 MenuId = rm.MenuId,
                 AccessLevel = rm.AccessLevel,
@@ -57,12 +57,12 @@ public class RoleMenuService : IRoleMenuService
     {
         try
         {
-            var item = await _repository.GetByIdAsync(id);
+            var item = await _roleMenuRepository.GetByIdAsync(id);
             if (item == null) return Result<RoleMenuResponseDto>.Failure("RoleMenu not found");
 
             var dto = new RoleMenuResponseDto
             {
-                Id = item.Id,
+                RoleMenuId = item.Id,
                 RoleId = item.RoleId,
                 MenuId = item.MenuId,
                 AccessLevel = item.AccessLevel,
@@ -80,34 +80,7 @@ public class RoleMenuService : IRoleMenuService
         }
     }
 
-    public async Task<Result<List<RoleMenuResponseDto>>> GetByRoleIdAsync(Guid roleId)
-    {
-        try
-        {
-            var query = _repository.Query().Where(rm => rm.RoleId == roleId);
-            var list = query.ToList();
-
-            var dtos = list.Select(item => new RoleMenuResponseDto
-            {
-                Id = item.Id,
-                RoleId = item.RoleId,
-                MenuId = item.MenuId,
-                AccessLevel = item.AccessLevel,
-                UserCreate = item.UserCreate,
-                DateCreate = item.DateCreate,
-                UserUpdate = item.UserUpdate,
-                DateUpdate = item.DateUpdate
-            }).ToList();
-
-            return Result<List<RoleMenuResponseDto>>.Success(dtos);
-        }
-        catch (Exception ex)
-        {
-            return Result<List<RoleMenuResponseDto>>.Failure($"Error retrieving role menus by role: {ex.Message}");
-        }
-    }
-
-    public async Task<Result<bool>> UpdateAccessLevelsForRoleAsync(string performedByUserId, Guid roleId, List<RoleMenuAccessUpdateDto> updates)
+    public async Task<Result<bool>> UpdateAccessLevelsForRoleAsync(string performedByUserId, string roleId, List<RoleMenuAccessUpdateDto> updates)
     {
         try
         {
@@ -115,14 +88,14 @@ public class RoleMenuService : IRoleMenuService
 
             foreach (var u in updates)
             {
-                var existing = await _repository.Query().FirstOrDefaultAsync(rm => rm.RoleId == roleId && rm.MenuId == u.MenuId);
+                var existing = await _roleMenuRepository.Query().FirstOrDefaultAsync(rm => rm.RoleId == roleId && rm.MenuId == u.MenuId);
 
                 if (existing != null)
                 {
                     existing.AccessLevel = u.AccessLevel;
                     existing.UserUpdate = performedByUserId;
                     existing.DateUpdate = DateTimeOffset.UtcNow;
-                    await _repository.UpdateAsync(existing);
+                    await _roleMenuRepository.UpdateAsync(existing);
                 }
                 else
                 {
@@ -135,7 +108,7 @@ public class RoleMenuService : IRoleMenuService
                         DateCreate = DateTimeOffset.UtcNow
                     };
 
-                    await _repository.AddAsync(entity);
+                    await _roleMenuRepository.AddAsync(entity);
                 }
             }
 
@@ -147,11 +120,11 @@ public class RoleMenuService : IRoleMenuService
         }
     }
 
-    public async Task<Result<List<MenuWithRoleMenuDto>>> GetMenusByRoleAsync(Guid roleId)
+    public async Task<Result<List<MenuWithRoleMenuDto>>> GetMenusByRoleAsync(string roleId)
     {
         try
         {
-            var roleMenus = _repository.Query().Where(rm => rm.RoleId == roleId).ToList();
+            var roleMenus = _roleMenuRepository.Query().Where(rm => rm.RoleId == roleId).ToList();
 
             if (!roleMenus.Any())
                 return Result<List<MenuWithRoleMenuDto>>.Success(new List<MenuWithRoleMenuDto>());
@@ -169,11 +142,14 @@ public class RoleMenuService : IRoleMenuService
 
                 combined.Add(new MenuWithRoleMenuDto
                 {
-                    Id = menu.Id,
+                    MenuId = menu.Id,
                     MenuLabel = menu.MenuLabel,
-                    SystemId = menu.SystemId,
+                    Module = menu.Module,
+                    ModuleType = menu.ModuleType,
+                    MenuType = menu.MenuType,
+                    IconUrl = menu.IconUrl,
                     Level = menu.Level,
-                    ParentId = menu.ParentId,
+                    ParentMenuId = menu.ParentId,
                     OrderIndex = menu.OrderIndex,
                     RoleMenuId = rm.Id,
                     AccessLevel = rm.AccessLevel
@@ -201,11 +177,11 @@ public class RoleMenuService : IRoleMenuService
                 DateCreate = DateTime.UtcNow
             };
 
-            var created = await _repository.AddAsync(entity);
+            var created = await _roleMenuRepository.AddAsync(entity);
 
             var response = new RoleMenuResponseDto
             {
-                Id = created.Id,
+                RoleMenuId = created.Id,
                 RoleId = created.RoleId,
                 MenuId = created.MenuId,
                 AccessLevel = created.AccessLevel,
@@ -225,7 +201,7 @@ public class RoleMenuService : IRoleMenuService
     {
         try
         {
-            var existing = await _repository.GetByIdAsync(id);
+            var existing = await _roleMenuRepository.GetByIdAsync(id);
             if (existing == null) return Result<RoleMenuResponseDto>.Failure("RoleMenu not found");
 
             existing.RoleId = dto.RoleId;
@@ -234,11 +210,11 @@ public class RoleMenuService : IRoleMenuService
             existing.UserUpdate = performedByUserId;
             existing.DateUpdate = DateTime.UtcNow;
 
-            await _repository.UpdateAsync(existing);
+            await _roleMenuRepository.UpdateAsync(existing);
 
             var response = new RoleMenuResponseDto
             {
-                Id = existing.Id,
+                RoleMenuId = existing.Id,
                 RoleId = existing.RoleId,
                 MenuId = existing.MenuId,
                 AccessLevel = existing.AccessLevel,
@@ -258,10 +234,10 @@ public class RoleMenuService : IRoleMenuService
     {
         try
         {
-            var existing = await _repository.GetByIdAsync(id);
+            var existing = await _roleMenuRepository.GetByIdAsync(id);
             if (existing == null) return Result<bool>.Failure("RoleMenu not found");
 
-            var rows = await _repository.DeleteAsync(existing);
+            var rows = await _roleMenuRepository.DeleteAsync(existing);
             return Result<bool>.Success(rows > 0);
         }
         catch (Exception ex)

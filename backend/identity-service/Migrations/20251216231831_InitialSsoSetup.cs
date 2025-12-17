@@ -81,9 +81,9 @@ namespace identity_service.Migrations
                     system_id = table.Column<Guid>(type: "uuid", nullable: false),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     session_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    used_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamptz", nullable: false),
+                    used_at = table.Column<DateTimeOffset>(type: "timestamptz", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamptz", nullable: false, defaultValueSql: "now()"),
                     ip_address = table.Column<string>(type: "text", nullable: true),
                     user_agent = table.Column<string>(type: "text", nullable: true)
                 },
@@ -106,9 +106,9 @@ namespace identity_service.Migrations
                     enabled = table.Column<bool>(type: "boolean", nullable: false),
                     last_modified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -132,9 +132,9 @@ namespace identity_service.Migrations
                     last_sync = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     api_key = table.Column<string>(type: "text", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -257,12 +257,12 @@ namespace identity_service.Migrations
                     event_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     ip_address = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     user_agent = table.Column<string>(type: "text", nullable: true),
-                    event_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    event_date = table.Column<DateTimeOffset>(type: "timestamptz", nullable: false),
                     details = table.Column<JsonDocument>(type: "jsonb", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -286,9 +286,9 @@ namespace identity_service.Migrations
                     is_used = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     used_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -311,9 +311,9 @@ namespace identity_service.Migrations
                     is_used = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     used_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -339,9 +339,9 @@ namespace identity_service.Migrations
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     application_user_id = table.Column<string>(type: "text", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -367,9 +367,9 @@ namespace identity_service.Migrations
                     password_hash = table.Column<string>(type: "text", nullable: false),
                     changed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -393,16 +393,16 @@ namespace identity_service.Migrations
                     system_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     device = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     ip_address = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
-                    issued_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    issued_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     is_revoked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    revoked_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     audience = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     scope = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -435,9 +435,9 @@ namespace identity_service.Migrations
                     bit_position = table.Column<int>(type: "integer", nullable: true),
                     url = table.Column<string>(type: "text", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -465,17 +465,17 @@ namespace identity_service.Migrations
                     system_id = table.Column<Guid>(type: "uuid", nullable: true),
                     session_id = table.Column<Guid>(type: "uuid", nullable: true),
                     token = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     is_revoked = table.Column<bool>(type: "boolean", nullable: false),
-                    revoked_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     replaced_by_token = table.Column<string>(type: "text", nullable: true),
                     device_info = table.Column<string>(type: "text", nullable: true),
                     ip_address = table.Column<string>(type: "text", nullable: true),
                     user_create = table.Column<string>(type: "text", nullable: true),
-                    date_create = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     user_update = table.Column<string>(type: "text", nullable: true),
-                    date_update = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -498,6 +498,36 @@ namespace identity_service.Migrations
                         principalTable: "user_sessions",
                         principalColumn: "id",
                         onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "role_menus",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    role_id = table.Column<string>(type: "text", nullable: false),
+                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    access_level = table.Column<int>(type: "integer", nullable: false),
+                    user_create = table.Column<string>(type: "text", nullable: true),
+                    date_create = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    user_update = table.Column<string>(type: "text", nullable: true),
+                    date_update = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_role_menus", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_role_menus_asp_net_roles_role_id",
+                        column: x => x.role_id,
+                        principalTable: "asp_net_roles",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_role_menus_menus_menu_id",
+                        column: x => x.menu_id,
+                        principalTable: "menus",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -553,7 +583,7 @@ namespace identity_service.Migrations
                 column: "expires_at");
 
             migrationBuilder.CreateIndex(
-                name: "idx_exchange_tokens_unused",
+                name: "idx_exchange_tokens_jti_unused",
                 table: "exchange_tokens",
                 column: "jti",
                 filter: "used_at IS NULL");
@@ -594,6 +624,16 @@ namespace identity_service.Migrations
                 name: "ix_refresh_tokens_user_id",
                 table: "refresh_tokens",
                 column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_role_menus_menu_id",
+                table: "role_menus",
+                column: "menu_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_role_menus_role_id",
+                table: "role_menus",
+                column: "role_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_system_registries_system_code",
@@ -653,9 +693,6 @@ namespace identity_service.Migrations
                 name: "exchange_tokens");
 
             migrationBuilder.DropTable(
-                name: "menus");
-
-            migrationBuilder.DropTable(
                 name: "mfa_backup_codes");
 
             migrationBuilder.DropTable(
@@ -665,22 +702,28 @@ namespace identity_service.Migrations
                 name: "refresh_tokens");
 
             migrationBuilder.DropTable(
+                name: "role_menus");
+
+            migrationBuilder.DropTable(
                 name: "user_authentication_providers");
 
             migrationBuilder.DropTable(
                 name: "user_password_histories");
 
             migrationBuilder.DropTable(
-                name: "asp_net_roles");
-
-            migrationBuilder.DropTable(
-                name: "system_registries");
-
-            migrationBuilder.DropTable(
                 name: "user_sessions");
 
             migrationBuilder.DropTable(
+                name: "asp_net_roles");
+
+            migrationBuilder.DropTable(
+                name: "menus");
+
+            migrationBuilder.DropTable(
                 name: "asp_net_users");
+
+            migrationBuilder.DropTable(
+                name: "system_registries");
         }
     }
 }

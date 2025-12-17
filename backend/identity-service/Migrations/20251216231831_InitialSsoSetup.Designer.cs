@@ -13,7 +13,7 @@ using identity_service.Data;
 namespace identity_service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251214194959_InitialSsoSetup")]
+    [Migration("20251216231831_InitialSsoSetup")]
     partial class InitialSsoSetup
     {
         /// <inheritdoc />
@@ -362,11 +362,11 @@ namespace identity_service.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -374,8 +374,8 @@ namespace identity_service.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("details");
 
-                    b.Property<DateTime>("EventDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateTimeOffset>("EventDate")
+                        .HasColumnType("timestamptz")
                         .HasColumnName("event_date");
 
                     b.Property<string>("EventType")
@@ -426,11 +426,11 @@ namespace identity_service.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -489,14 +489,14 @@ namespace identity_service.Migrations
                         .HasColumnName("jti")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamptz")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamptz")
                         .HasColumnName("expires_at");
 
                     b.Property<string>("IpAddress")
@@ -511,8 +511,8 @@ namespace identity_service.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("system_id");
 
-                    b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamptz")
                         .HasColumnName("used_at");
 
                     b.Property<string>("UserAgent")
@@ -530,7 +530,7 @@ namespace identity_service.Migrations
                         .HasDatabaseName("idx_exchange_tokens_expires_at");
 
                     b.HasIndex("Jti")
-                        .HasDatabaseName("idx_exchange_tokens_unused")
+                        .HasDatabaseName("idx_exchange_tokens_jti_unused")
                         .HasFilter("used_at IS NULL");
 
                     b.ToTable("exchange_tokens", (string)null);
@@ -553,11 +553,11 @@ namespace identity_service.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("bit_position");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -650,11 +650,11 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -709,11 +709,11 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("client_secret");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -772,15 +772,15 @@ namespace identity_service.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -788,7 +788,7 @@ namespace identity_service.Migrations
                         .HasColumnType("text")
                         .HasColumnName("device_info");
 
-                    b.Property<DateTime>("ExpiresAt")
+                    b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
@@ -804,7 +804,7 @@ namespace identity_service.Migrations
                         .HasColumnType("text")
                         .HasColumnName("replaced_by_token");
 
-                    b.Property<DateTime?>("RevokedAt")
+                    b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
 
@@ -849,6 +849,55 @@ namespace identity_service.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("identity_service.Models.RoleMenu", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<int>("AccessLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("access_level");
+
+                    b.Property<DateTimeOffset?>("DateCreate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_create");
+
+                    b.Property<DateTimeOffset?>("DateUpdate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_update");
+
+                    b.Property<Guid>("MenuId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("menu_id");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("UserCreate")
+                        .HasColumnType("text")
+                        .HasColumnName("user_create");
+
+                    b.Property<string>("UserUpdate")
+                        .HasColumnType("text")
+                        .HasColumnName("user_update");
+
+                    b.HasKey("Id")
+                        .HasName("pk_role_menus");
+
+                    b.HasIndex("MenuId")
+                        .HasDatabaseName("ix_role_menus_menu_id");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_role_menus_role_id");
+
+                    b.ToTable("role_menus", (string)null);
+                });
+
             modelBuilder.Entity("identity_service.Models.SystemRegistry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -877,11 +926,11 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("contact_email");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -949,11 +998,11 @@ namespace identity_service.Migrations
                         .HasColumnType("text")
                         .HasColumnName("application_user_id");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -1018,11 +1067,11 @@ namespace identity_service.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("changed_at");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -1068,11 +1117,11 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("audience");
 
-                    b.Property<DateTime?>("DateCreate")
+                    b.Property<DateTimeOffset?>("DateCreate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_create");
 
-                    b.Property<DateTime?>("DateUpdate")
+                    b.Property<DateTimeOffset?>("DateUpdate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_update");
 
@@ -1082,7 +1131,7 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("device");
 
-                    b.Property<DateTime>("ExpiresAt")
+                    b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
@@ -1097,7 +1146,7 @@ namespace identity_service.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_revoked");
 
-                    b.Property<DateTime>("IssuedAt")
+                    b.Property<DateTimeOffset>("IssuedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("issued_at");
 
@@ -1107,7 +1156,7 @@ namespace identity_service.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("jwt_id");
 
-                    b.Property<DateTime?>("RevokedAt")
+                    b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
 
@@ -1288,6 +1337,27 @@ namespace identity_service.Migrations
                     b.Navigation("System");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("identity_service.Models.RoleMenu", b =>
+                {
+                    b.HasOne("identity_service.Models.Menu", "Menu")
+                        .WithMany()
+                        .HasForeignKey("MenuId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_menus_menus_menu_id");
+
+                    b.HasOne("identity_service.Models.ApplicationRole", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_menus_asp_net_roles_role_id");
+
+                    b.Navigation("Menu");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("identity_service.Models.UserAuthenticationProvider", b =>

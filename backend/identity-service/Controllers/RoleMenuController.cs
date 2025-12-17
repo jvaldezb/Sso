@@ -30,24 +30,16 @@ public class RoleMenuController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    [HttpGet("{roleMenuId}")]
+    public async Task<IActionResult> GetById(Guid roleMenuId)
     {
-        var result = await _service.GetByIdAsync(id);
+        var result = await _service.GetByIdAsync(roleMenuId);
         if (!result.IsSuccess) return NotFound(result.ErrorMessage);
         return Ok(result.Data);
     }
 
-    [HttpGet("roles/{roleId}")]
-    public async Task<IActionResult> GetByRoleId(Guid roleId)
-    {
-        var result = await _service.GetByRoleIdAsync(roleId);
-        if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
-        return Ok(result.Data);
-    }
-
     [HttpGet("menus-by-role/{roleId}")]
-    public async Task<IActionResult> GetMenusByRole(Guid roleId)
+    public async Task<IActionResult> GetMenusByRole(string roleId)
     {
         var result = await _service.GetMenusByRoleAsync(roleId);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
@@ -55,7 +47,7 @@ public class RoleMenuController : ControllerBase
     }
 
     [HttpPatch("roles/{roleId}/access-levels")]
-    public async Task<IActionResult> UpdateAccessLevels(Guid roleId, [FromBody] List<RoleMenuAccessUpdateDto> updates)
+    public async Task<IActionResult> UpdateAccessLevels(string roleId, [FromBody] List<RoleMenuAccessUpdateDto> updates)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -79,30 +71,30 @@ public class RoleMenuController : ControllerBase
         var result = await _service.CreateAsync(userId, dto);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
-        return CreatedAtAction(nameof(GetById), new { id = result.Data?.Id }, result.Data);
+        return CreatedAtAction(nameof(GetById), new { id = result.Data?.RoleMenuId }, result.Data);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] RoleMenuUpdateDto dto)
+    [HttpPut("{roleMenuId}")]
+    public async Task<IActionResult> Update(Guid roleMenuId, [FromBody] RoleMenuUpdateDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (userId == null) return Unauthorized("Token inválido");
 
-        var result = await _service.UpdateAsync(userId, id, dto);
+        var result = await _service.UpdateAsync(userId, roleMenuId, dto);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
         return Ok(result.Data);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete("{roleMenuId}")]
+    public async Task<IActionResult> Delete(Guid roleMenuId)
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (userId == null) return Unauthorized("Token inválido");
 
-        var result = await _service.DeleteAsync(userId, id);
+        var result = await _service.DeleteAsync(userId, roleMenuId);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
         return Ok(new { message = "RoleMenu eliminado correctamente." });
