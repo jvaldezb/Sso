@@ -59,9 +59,9 @@ CREATE TABLE exchange_tokens (
     system_id uuid NOT NULL,
     user_id uuid NOT NULL,
     session_id uuid NOT NULL,
-    expires_at timestamp with time zone NOT NULL,
-    used_at timestamp with time zone,
-    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    expires_at timestamptz NOT NULL,
+    used_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT (now()),
     ip_address text,
     user_agent text,
     CONSTRAINT pk_exchange_tokens PRIMARY KEY (jti)
@@ -155,7 +155,7 @@ CREATE TABLE auth_audit_logs (
     event_type character varying(50),
     ip_address character varying(50),
     user_agent text,
-    event_date timestamp with time zone NOT NULL,
+    event_date timestamptz NOT NULL,
     details jsonb,
     user_create text,
     date_create timestamp with time zone,
@@ -255,7 +255,7 @@ CREATE TABLE menus (
     menu_label character varying(50) NOT NULL,
     description character varying(150),
     level smallint NOT NULL,
-    module text,
+    module text NOT NULL,
     module_type text,
     menu_type text,
     required_claim_type text,
@@ -265,6 +265,7 @@ CREATE TABLE menus (
     order_index smallint NOT NULL,
     bit_position integer,
     url text,
+    is_enabled boolean NOT NULL,
     user_create text,
     date_create timestamp with time zone,
     user_update text,
@@ -317,11 +318,11 @@ CREATE INDEX ix_email_verification_tokens_user_id ON email_verification_tokens (
 
 CREATE INDEX idx_exchange_tokens_expires_at ON exchange_tokens (expires_at);
 
-CREATE INDEX idx_exchange_tokens_unused ON exchange_tokens (jti) WHERE used_at IS NULL;
+CREATE INDEX idx_exchange_tokens_jti_unused ON exchange_tokens (jti) WHERE used_at IS NULL;
+
+CREATE UNIQUE INDEX ix_menu_system_id_module ON menus (system_id, module);
 
 CREATE INDEX ix_menus_parent_id ON menus (parent_id);
-
-CREATE INDEX ix_menus_system_id ON menus (system_id);
 
 CREATE UNIQUE INDEX uix_mfa_backup_codes_user_code ON mfa_backup_codes (user_id, code);
 
@@ -344,7 +345,7 @@ CREATE UNIQUE INDEX uq_user_password ON user_password_histories (user_id, passwo
 CREATE UNIQUE INDEX ix_user_sessions_user_id_jwt_id ON user_sessions (user_id, jwt_id);
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-VALUES ('20251214194959_InitialSsoSetup', '8.0.22');
+VALUES ('20251219013730_InitialSsoSetup', '8.0.22');
 
 COMMIT;
 
