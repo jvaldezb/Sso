@@ -314,6 +314,7 @@ public class SystemRegistryService : ISystemRegistryService
                     Level = m.Level,
                     Module = m.Module,
                     ModuleType = m.ModuleType,
+                    MenuType = m.MenuType,
                     IconUrl = m.IconUrl,
                     AccessScope = m.AccessScope,
                     OrderIndex = m.OrderIndex,                    

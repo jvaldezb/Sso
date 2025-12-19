@@ -157,7 +157,7 @@ builder.Services.AddScoped<IRoleMenuRepository, RoleMenuRepository>();
 
 // Services
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IMenuRepository, MenuRepository>();
+builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthAuditLogService, AuthAuditLogService>();
 builder.Services.AddScoped<ISystemRegistryService, SystemRegistryService>();
