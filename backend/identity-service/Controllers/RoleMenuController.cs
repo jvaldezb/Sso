@@ -30,15 +30,15 @@ public class RoleMenuController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("{roleMenuId}")]
-    public async Task<IActionResult> GetById(Guid roleMenuId)
+    [HttpGet("{Id}")]
+    public async Task<IActionResult> GetById(Guid Id)
     {
-        var result = await _service.GetByIdAsync(roleMenuId);
+        var result = await _service.GetByIdAsync(Id);
         if (!result.IsSuccess) return NotFound(result.ErrorMessage);
         return Ok(result.Data);
     }
 
-    [HttpGet("menus-by-role/{roleId}")]
+    [HttpGet("roles/{roleId}/menus")]
     public async Task<IActionResult> GetMenusByRole(string roleId)
     {
         var result = await _service.GetMenusByRoleAsync(roleId);
@@ -71,30 +71,30 @@ public class RoleMenuController : ControllerBase
         var result = await _service.CreateAsync(userId, dto);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
-        return CreatedAtAction(nameof(GetById), new { id = result.Data?.RoleMenuId }, result.Data);
+        return CreatedAtAction(nameof(GetById), new { id = result.Data?.Id }, result.Data);
     }
 
-    [HttpPut("{roleMenuId}")]
-    public async Task<IActionResult> Update(Guid roleMenuId, [FromBody] RoleMenuUpdateDto dto)
+    [HttpPut("{Id}")]
+    public async Task<IActionResult> Update(Guid Id, [FromBody] RoleMenuUpdateDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (userId == null) return Unauthorized("Token inválido");
 
-        var result = await _service.UpdateAsync(userId, roleMenuId, dto);
+        var result = await _service.UpdateAsync(userId, Id, dto);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
         return Ok(result.Data);
     }
 
-    [HttpDelete("{roleMenuId}")]
-    public async Task<IActionResult> Delete(Guid roleMenuId)
+    [HttpDelete("{Id}")]
+    public async Task<IActionResult> Delete(Guid Id)
     {
         var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (userId == null) return Unauthorized("Token inválido");
 
-        var result = await _service.DeleteAsync(userId, roleMenuId);
+        var result = await _service.DeleteAsync(userId, Id);
         if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
         return Ok(new { message = "RoleMenu eliminado correctamente." });

@@ -34,7 +34,7 @@ public class RoleMenuService : IRoleMenuService
 
             var dtos = items.Select(rm => new RoleMenuResponseDto
             {
-                RoleMenuId = rm.Id,
+                Id = rm.Id,
                 RoleId = rm.RoleId,
                 MenuId = rm.MenuId,
                 AccessLevel = rm.AccessLevel,
@@ -62,7 +62,7 @@ public class RoleMenuService : IRoleMenuService
 
             var dto = new RoleMenuResponseDto
             {
-                RoleMenuId = item.Id,
+                Id = item.Id,
                 RoleId = item.RoleId,
                 MenuId = item.MenuId,
                 AccessLevel = item.AccessLevel,
@@ -181,7 +181,7 @@ public class RoleMenuService : IRoleMenuService
 
             var response = new RoleMenuResponseDto
             {
-                RoleMenuId = created.Id,
+                Id = created.Id,
                 RoleId = created.RoleId,
                 MenuId = created.MenuId,
                 AccessLevel = created.AccessLevel,
@@ -214,7 +214,7 @@ public class RoleMenuService : IRoleMenuService
 
             var response = new RoleMenuResponseDto
             {
-                RoleMenuId = existing.Id,
+                Id = existing.Id,
                 RoleId = existing.RoleId,
                 MenuId = existing.MenuId,
                 AccessLevel = existing.AccessLevel,
