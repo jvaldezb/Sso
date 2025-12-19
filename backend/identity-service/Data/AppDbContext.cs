@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<MfaBackupCode> MfaBackupCodes => Set<MfaBackupCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ExchangeToken> ExchangeTokens => Set<ExchangeToken>();
+    public DbSet<RoleMenu> RoleMenus => Set<RoleMenu>();
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -33,6 +34,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
         builder.ApplyConfiguration(new ProviderConfigurationConfiguration());
         builder.ApplyConfiguration(new SystemRegistryConfiguration());
         builder.ApplyConfiguration(new MenuConfiguration());
+        builder.ApplyConfiguration(new RoleMenuConfiguration());
         builder.ApplyConfiguration(new UserPasswordHistoryConfiguration());
         builder.ApplyConfiguration(new EmailVerificationTokenConfiguration());
         builder.ApplyConfiguration(new MfaBackupCodeConfiguration());
