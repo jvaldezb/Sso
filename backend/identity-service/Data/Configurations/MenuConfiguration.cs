@@ -17,7 +17,7 @@ public class MenuConfiguration : IEntityTypeConfiguration<Menu>
 
         builder.Property(x => x.MenuLabel).HasMaxLength(50).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(150);
-        builder.Property(x => x.Module).HasColumnType("text");
+        builder.Property(x => x.Module).HasColumnType("text").IsRequired();
         builder.Property(x => x.ModuleType).HasColumnType("text");
         builder.Property(x => x.MenuType).HasColumnType("text");
         builder.Property(x => x.RequiredClaimType).HasColumnType("text");
@@ -25,6 +25,11 @@ public class MenuConfiguration : IEntityTypeConfiguration<Menu>
         builder.Property(x => x.AccessScope).HasMaxLength(25);
         builder.Property(x => x.UserUpdate).HasColumnType("text");
         builder.Property(x => x.UserCreate).HasColumnType("text");
+
+        // Índice único sobre (SystemId, Module)
+        builder.HasIndex(x => new { x.SystemId, x.Module })
+            .IsUnique()
+            .HasDatabaseName("IX_Menu_SystemId_Module");
 
         builder.HasOne(x => x.ParentMenu)
             .WithMany(x => x.ChildMenus)

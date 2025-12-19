@@ -8,7 +8,7 @@ public class Menu : EntityBase
     public string MenuLabel { get; set; } = null!;
     public string? Description { get; set; }
     public short Level { get; set; } = 1;
-    public string? Module { get; set; }
+    public string Module { get; set; } = string.Empty;
     public string? ModuleType { get; set; }
     public string? MenuType { get; set; }
     public string? RequiredClaimType { get; set; }
@@ -18,6 +18,7 @@ public class Menu : EntityBase
     public short OrderIndex { get; set; } = 1; 
     public int? BitPosition { get; set; }
     public string? Url { get; set; }
+    public bool IsEnabled { get; set; } = true;
 
     public virtual Menu? ParentMenu { get; set; }
     public virtual ICollection<Menu>? ChildMenus { get; set; }
