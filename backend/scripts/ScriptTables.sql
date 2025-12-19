@@ -298,6 +298,20 @@ CREATE TABLE refresh_tokens (
     CONSTRAINT fk_refresh_tokens_user_sessions_session_id FOREIGN KEY (session_id) REFERENCES user_sessions (id) ON DELETE SET NULL
 );
 
+CREATE TABLE role_menus (
+    id uuid NOT NULL DEFAULT (gen_random_uuid()),
+    role_id text NOT NULL,
+    menu_id uuid NOT NULL,
+    access_level integer NOT NULL,
+    user_create text,
+    date_create timestamp with time zone,
+    user_update text,
+    date_update timestamp with time zone,
+    CONSTRAINT pk_role_menus PRIMARY KEY (id),
+    CONSTRAINT fk_role_menus_asp_net_roles_role_id FOREIGN KEY (role_id) REFERENCES asp_net_roles (id) ON DELETE CASCADE,
+    CONSTRAINT fk_role_menus_menus_menu_id FOREIGN KEY (menu_id) REFERENCES menus (id) ON DELETE CASCADE
+);
+
 CREATE INDEX ix_asp_net_role_claims_role_id ON asp_net_role_claims (role_id);
 
 CREATE UNIQUE INDEX role_name_index ON asp_net_roles (normalized_name);
@@ -334,6 +348,10 @@ CREATE INDEX ix_refresh_tokens_system_id ON refresh_tokens (system_id);
 
 CREATE INDEX ix_refresh_tokens_user_id ON refresh_tokens (user_id);
 
+CREATE INDEX ix_role_menus_menu_id ON role_menus (menu_id);
+
+CREATE INDEX ix_role_menus_role_id ON role_menus (role_id);
+
 CREATE UNIQUE INDEX ix_system_registries_system_code ON system_registries (system_code);
 
 CREATE INDEX ix_user_authentication_providers_application_user_id ON user_authentication_providers (application_user_id);
@@ -345,7 +363,7 @@ CREATE UNIQUE INDEX uq_user_password ON user_password_histories (user_id, passwo
 CREATE UNIQUE INDEX ix_user_sessions_user_id_jwt_id ON user_sessions (user_id, jwt_id);
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-VALUES ('20251219013730_InitialSsoSetup', '8.0.22');
+VALUES ('20251219162255_InitialSsoSetup', '8.0.22');
 
 COMMIT;
 
