@@ -13,6 +13,6 @@ public interface IMenuService
     Task<Result<PaginatedList<MenuResponseDto>>> GetAllAsync(int page, int size);
     Task<Result<MenuResponseDto>> GetByIdAsync(Guid menuId);
     Task<Result<List<MenuResponseDto>>> GetBySystemIdAsync(Guid systemId);
-    Task<Result<List<MenuResponseDto>>> GetMenuHierarchyBySystemIdAsync(Guid systemId);
+    Task<Result<List<MenuWithChildrenResponseDto>>> GetMenuHierarchyBySystemIdAsync(Guid systemId);
     Task<Result<List<MenuResponseDto>>> GetChildMenusAsync(Guid menuParentId);
 }

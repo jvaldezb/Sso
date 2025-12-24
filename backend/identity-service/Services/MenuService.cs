@@ -345,9 +345,25 @@ public class MenuService : IMenuService
             var items = await query
                 .Skip((page - 1) * size)
                 .Take(size)
-                .ToListAsync();
+                .ToListAsync();                       
 
             var mappedItems = _mapper.Map<List<MenuResponseDto>>(items);
+
+            // agregar system code y name
+            var systemIds = items.Select(m => m.SystemId).Distinct().ToList();
+            var systems = await _context.SystemRegistries
+                .Where(s => systemIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, s => s); 
+
+            foreach (var menuDto in mappedItems)
+            {
+                if (systems.TryGetValue(menuDto.SystemId, out var system))
+                {
+                    menuDto.SystemCode = system.SystemCode;
+                    menuDto.SystemName = system.SystemName;
+                }
+            }    
+
             var paginatedList = new PaginatedList<MenuResponseDto>(mappedItems, totalCount, page, size);
 
             return Result<PaginatedList<MenuResponseDto>>.Success(paginatedList);
@@ -397,7 +413,7 @@ public class MenuService : IMenuService
         }
     }
 
-    public async Task<Result<List<MenuResponseDto>>> GetMenuHierarchyBySystemIdAsync(Guid systemId)
+    public async Task<Result<List<MenuWithChildrenResponseDto>>> GetMenuHierarchyBySystemIdAsync(Guid systemId)
     {
         try
         {
@@ -411,19 +427,19 @@ public class MenuService : IMenuService
             // Get root menus (no parent)
             var rootMenus = allMenus.Where(m => m.ParentId == null).ToList();
             
-            var result = new List<MenuResponseDto>();
+            var result = new List<MenuWithChildrenResponseDto>();
             foreach (var rootMenu in rootMenus)
             {
-                var menuDto = _mapper.Map<MenuResponseDto>(rootMenu);
+                var menuDto = _mapper.Map<MenuWithChildrenResponseDto>(rootMenu);
                 menuDto.ChildMenus = BuildMenuHierarchy(rootMenu.Id, allMenus);
                 result.Add(menuDto);
             }
 
-            return Result<List<MenuResponseDto>>.Success(result);
+            return Result<List<MenuWithChildrenResponseDto>>.Success(result);
         }
         catch (Exception ex)
         {
-            return Result<List<MenuResponseDto>>.Failure($"Error al obtener la jerarquía de menús: {ex.Message}");
+            return Result<List<MenuWithChildrenResponseDto>>.Failure($"Error al obtener la jerarquía de menús: {ex.Message}");
         }
     }
 
@@ -445,17 +461,17 @@ public class MenuService : IMenuService
         }
     }
 
-    private List<MenuResponseDto> BuildMenuHierarchy(Guid parentId, List<Menu> allMenus)
+    private List<MenuWithChildrenResponseDto> BuildMenuHierarchy(Guid parentId, List<Menu> allMenus)
     {
         var children = allMenus
             .Where(m => m.ParentId == parentId)
             .OrderBy(m => m.OrderIndex)
             .ToList();
 
-        var result = new List<MenuResponseDto>();
+        var result = new List<MenuWithChildrenResponseDto>();
         foreach (var child in children)
         {
-            var childDto = _mapper.Map<MenuResponseDto>(child);
+            var childDto = _mapper.Map<MenuWithChildrenResponseDto>(child);
             childDto.ChildMenus = BuildMenuHierarchy(child.Id, allMenus);
             result.Add(childDto);
         }

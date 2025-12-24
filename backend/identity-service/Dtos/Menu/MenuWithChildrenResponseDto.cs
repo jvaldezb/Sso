@@ -2,13 +2,11 @@ using System;
 
 namespace identity_service.Dtos.Menu;
 
-public class MenuResponseDto
+public class MenuWithChildrenResponseDto
 {
     public Guid Id { get; set; }
     public Guid? ParentId { get; set; }
     public Guid SystemId { get; set; }
-    public string SystemCode { get; set; } = default!;
-    public string SystemName { get; set; } = default!;
     public string MenuLabel { get; set; } = default!;
     public string? Description { get; set; }
     public short Level { get; set; }
@@ -22,5 +20,6 @@ public class MenuResponseDto
     public string? UserCreate { get; set; }
     public string? UserUpdate { get; set; }
     public DateTimeOffset? DateCreate { get; set; }
-    public DateTimeOffset? DateUpdate { get; set; }    
+    public DateTimeOffset? DateUpdate { get; set; }
+    public List<MenuWithChildrenResponseDto>? ChildMenus { get; set; }
 }

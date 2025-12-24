@@ -21,7 +21,7 @@ public class RoleMenuController : ControllerBase
     {
         _service = service;
     }
-
+/*
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int size = 10)
     {
@@ -99,4 +99,5 @@ public class RoleMenuController : ControllerBase
 
         return Ok(new { message = "RoleMenu eliminado correctamente." });
     }
+    */
 }

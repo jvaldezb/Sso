@@ -67,7 +67,19 @@ public class RoleService : IRoleService
             if (!result.Succeeded)
                 return Result<RoleDto>.Failure(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            await RecordRoleAuditAsync("CREATE", performedByUserId, new { RoleName = dto.Name, SystemId = dto.SystemId });
+            // Assign menus if provided
+            if (dto.Menus != null && dto.Menus.Any())
+            {
+                var menusResult = await SetRoleMenusAsync(performedByUserId, role.Id, dto.Menus);
+                if (!menusResult.IsSuccess)
+                {
+                    // Rollback: delete the created role
+                    await _roleManager.DeleteAsync(role);
+                    return Result<RoleDto>.Failure($"Role created but failed to assign menus: {menusResult.ErrorMessage}");
+                }
+            }
+
+            await RecordRoleAuditAsync("CREATE", performedByUserId, new { RoleName = dto.Name, SystemId = dto.SystemId, MenusCount = dto.Menus?.Count ?? 0 });
 
             var roleDto = _mapper.Map<RoleDto>(role);
             return Result<RoleDto>.Success(roleDto);
@@ -102,7 +114,15 @@ public class RoleService : IRoleService
             if (!result.Succeeded)
                 return Result<RoleDto>.Failure(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            await RecordRoleAuditAsync("UPDATE", performedByUserId, new { RoleId = roleId, NewName = dto.Name, SystemId = dto.SystemId });
+            // Update menus if provided
+            if (dto.Menus != null && dto.Menus.Any())
+            {
+                var menusResult = await SetRoleMenusAsync(performedByUserId, role.Id, dto.Menus);
+                if (!menusResult.IsSuccess)
+                    return Result<RoleDto>.Failure($"Role updated but failed to update menus: {menusResult.ErrorMessage}");
+            }
+
+            await RecordRoleAuditAsync("UPDATE", performedByUserId, new { RoleId = roleId, NewName = dto.Name, SystemId = dto.SystemId, MenusCount = dto.Menus?.Count ?? 0 });
 
             var roleDto = _mapper.Map<RoleDto>(role);
             return Result<RoleDto>.Success(roleDto);
@@ -583,7 +603,7 @@ public class RoleService : IRoleService
 
             var menusDtoByRole = _mapper.Map<List<MenuRoleRwxResponseDto>>(menusByRole);
             
-            // Merge decoded permissions into full menu list
+            // Merge decoded permissions into full menu listé
             foreach (var menu in menusDtoByRole)
             {
                 var decodedMenu = decodedPermissions.FirstOrDefault(m => m.Id == menu.Id);
@@ -666,7 +686,32 @@ public class RoleService : IRoleService
             if (!result.Succeeded)
                 return Result<bool>.Failure(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            await RecordRoleAuditAsync("SET_ROLE_MENUS", performedByUserId, new { RoleId = roleId, EncodedValue = encodedValue.ToString() });
+            // Guardar también en la tabla RoleMenus
+            // 1. Eliminar los registros existentes para este rol
+            var existingRoleMenus = await _context.RoleMenus
+                .Where(rm => rm.RoleId == roleId)
+                .ToListAsync();
+            
+            if (existingRoleMenus.Any())
+            {
+                _context.RoleMenus.RemoveRange(existingRoleMenus);
+            }
+
+            // 2. Crear los nuevos registros
+            var now = DateTime.UtcNow;
+            var newRoleMenus = menus.Select(m => new RoleMenu
+            {
+                RoleId = roleId,
+                MenuId = m.Id,
+                AccessLevel = m.RwxValue,
+                UserCreate = performedByUserId,
+                DateCreate = now
+            }).ToList();
+
+            await _context.RoleMenus.AddRangeAsync(newRoleMenus);
+            await _context.SaveChangesAsync();
+
+            await RecordRoleAuditAsync("SET_ROLE_MENUS", performedByUserId, new { RoleId = roleId, EncodedValue = encodedValue.ToString(), MenusCount = menus.Count });
 
             return Result<bool>.Success(true);
         }
