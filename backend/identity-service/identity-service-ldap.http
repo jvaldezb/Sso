@@ -1,0 +1,27 @@
+### Login LDAP - Ejemplo de prueba
+POST http://localhost:5000/api/auth/login-ldap
+Content-Type: application/json
+
+{
+  "username": "usuario.ldap",
+  "password": "password123"
+}
+
+### Respuesta esperada:
+# {
+#   "isSuccess": true,
+#   "data": {
+#     "userId": "guid-del-usuario",
+#     "fullName": "Nombre Completo Usuario",
+#     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+#     "accessTokenExpires": "2025-12-24T15:30:00Z",
+#     "refreshToken": "refresh-token-largo",
+#     "refreshTokenExpires": "2025-12-31T15:30:00Z",
+#     "ssoSystemId": 1,
+#     "systems": [...],
+#     "menus": [...],
+#     "roles": [...]
+#   }
+# }
+
+###

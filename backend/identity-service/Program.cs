@@ -168,6 +168,7 @@ builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExchangeTokenService, ExchangeTokenService>();
 builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
+builder.Services.AddScoped<ILdapAuthenticationService, LdapAuthenticationService>();
 
 var app = builder.Build();
 

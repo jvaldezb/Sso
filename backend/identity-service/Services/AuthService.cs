@@ -23,6 +23,8 @@ private readonly IRefreshTokenService _refreshTokenService;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IMapper _mapper;
+    private readonly ILdapAuthenticationService _ldapAuthService;
+    private readonly IConfiguration _configuration;
 
     public AuthService(
         IRefreshTokenService refreshTokenService,
@@ -31,7 +33,9 @@ private readonly IRefreshTokenService _refreshTokenService;
         IUserSessionRepository userSessionRepository,
         RoleManager<ApplicationRole> roleManager,
         UserManager<ApplicationUser> userManager,
-        IMapper mapper)
+        IMapper mapper,
+        ILdapAuthenticationService ldapAuthService,
+        IConfiguration configuration)
     {
         _refreshTokenService = refreshTokenService;
         _tokenGenerator = tokenGenerator;
@@ -40,6 +44,8 @@ private readonly IRefreshTokenService _refreshTokenService;
         _roleManager = roleManager;
         _userManager = userManager;
         _mapper = mapper;
+        _ldapAuthService = ldapAuthService;
+        _configuration = configuration;
     }
 
     public async Task<Result<AuthResponseSsoDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip)
@@ -139,6 +145,160 @@ private readonly IRefreshTokenService _refreshTokenService;
             RefreshToken = refreshToken.Token,
             RefreshTokenExpires = refreshToken.ExpiresAt,            
             SsoSystemId = ssoSystem.Id,            
+            Systems = listSystemsRegistry.Select(sr => new SystemRegistryResponseDto
+            {
+                Id = sr.Id,
+                SystemCode = sr.SystemCode,
+                SystemName = sr.SystemName,
+                Description = sr.Description,
+                BaseUrl = sr.BaseUrl,
+                IconUrl = sr.IconUrl,
+                Category = sr.Category,
+                ContactEmail = sr.ContactEmail
+            }
+            ).ToList(),
+            Menus = menuDtos,
+            Roles = ssoRoles
+        };
+
+        return Result<AuthResponseSsoDto>.Success(result);
+    }
+
+    public async Task<Result<AuthResponseSsoDto>> LoginLdapAsync(LoginLdapDto dto, string device, string? ip)
+    {
+        // Verificar si LDAP está habilitado
+        var ldapEnabled = bool.Parse(_configuration["LdapSettings:Enabled"] ?? "false");
+        if (!ldapEnabled)
+        {
+            return Result<AuthResponseSsoDto>.Failure("LDAP authentication is not enabled");
+        }
+
+        // Validar que el sistema SSO Central esté configurado
+        var ssoSystem = await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.IsCentralAdmin == true);
+        if (ssoSystem == null)
+            return Result<AuthResponseSsoDto>.Failure("SSO Central system not configured.");
+
+        // 1. Autenticar contra LDAP
+        var ldapResult = await _ldapAuthService.AuthenticateAsync(dto.Username, dto.Password);
+        if (!ldapResult.IsSuccess || ldapResult.Data == null)
+        {
+            return Result<AuthResponseSsoDto>.Failure(ldapResult.ErrorMessage ?? "LDAP authentication failed");
+        }
+
+        var ldapUserInfo = ldapResult.Data;
+
+        // 2. Buscar o crear usuario en la base de datos local
+        var user = await _userManager.FindByNameAsync(dto.Username);
+        
+        if (user == null)
+        {
+            // Crear nuevo usuario si no existe
+            user = new ApplicationUser
+            {
+                UserName = dto.Username,
+                Email = ldapUserInfo.Email,
+                EmailConfirmed = true,
+                FullName = ldapUserInfo.DisplayName,
+                IsEnabled = true,
+                DocumentType = "LDAP",
+                DocumentNumber = dto.Username,
+                DateCreate = DateTime.UtcNow,
+                UserCreate = "LDAP_SYSTEM"
+            };
+
+            var createResult = await _userManager.CreateAsync(user);
+            if (!createResult.Succeeded)
+            {
+                return Result<AuthResponseSsoDto>.Failure($"Failed to create user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+            }
+        }
+        else
+        {
+            // Actualizar información del usuario existente
+            user.Email = ldapUserInfo.Email;
+            user.FullName = ldapUserInfo.DisplayName;
+            user.DateUpdate = DateTime.UtcNow;
+            user.UserUpdate = "LDAP_SYSTEM";
+            await _userManager.UpdateAsync(user);
+        }
+
+        // 3. Encontrar sistemas asignados por roles
+        var userRoles = await _userManager.GetRolesAsync(user);
+
+        var roles = await _roleManager.Roles
+            .Where(r => userRoles.Contains(r.Name!))
+            .ToListAsync();
+
+        var systemIds = roles
+            .OfType<ApplicationRole>()
+            .Where(r => r.SystemId.HasValue)
+            .Select(r => r.SystemId!.Value)
+            .ToList();
+
+        var listSystemsRegistry = await _context.SystemRegistries
+            .Where(sr => systemIds.Contains(sr.Id))
+            .ToListAsync();
+
+        var systems = listSystemsRegistry.Select(sr => sr.SystemCode).ToList();
+
+        var jti = Guid.NewGuid().ToString();
+
+        // 4. Registrar sesión
+        var session = new UserSession
+        {
+            UserId = user.Id,
+            JwtId = jti,
+            TokenType = "session",
+            SystemName = "SSO-CENTRAL",
+            Device = device.Length > 500 ? device.Substring(0, 500) : device,
+            IpAddress = ip,
+            IssuedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(60),
+            Audience = "sso-central",
+            Scope = "global"
+        };
+
+        await _userSessionRepository.AddAsync(session);
+
+        // 5. Generar access token Fase A
+        var (accessToken, expires) = _tokenGenerator.GenerateCentralToken(user, session, systems, "global", 60);
+
+        var menuDtos = new List<MenuDto>();
+        if (listSystemsRegistry.Any(x => x.IsCentralAdmin == true))
+        {
+            var menus = await _context.Menus
+                .Where(m => m.SystemId == ssoSystem.Id)
+                .OrderBy(m => m.OrderIndex)
+                .ToListAsync();
+
+            menuDtos = _mapper.Map<List<MenuDto>>(menus);
+        }
+
+        var accessTokenexpiresAt = DateTimeOffset.UtcNow.AddMinutes(60);
+
+        // 6. Generar el refresh token
+        var refreshToken = _refreshTokenService.GenerateRefreshToken(ip, device);
+        await _refreshTokenService.SaveRefreshTokenAsync(user, refreshToken);
+
+        // 7. Roles para todos los sistemas
+        var ssoRoles = roles
+            .Select(r => new AuthRoleDto
+            {
+                RoleId = r.Id,
+                RoleName = r.Name!
+            })
+            .ToList();
+
+        // 8. Retornar access + refresh token
+        var result = new AuthResponseSsoDto
+        {
+            UserId = user.Id,
+            FullName = user.FullName!,
+            AccessToken = accessToken,
+            AccessTokenExpires = accessTokenexpiresAt,
+            RefreshToken = refreshToken.Token,
+            RefreshTokenExpires = refreshToken.ExpiresAt,
+            SsoSystemId = ssoSystem.Id,
             Systems = listSystemsRegistry.Select(sr => new SystemRegistryResponseDto
             {
                 Id = sr.Id,

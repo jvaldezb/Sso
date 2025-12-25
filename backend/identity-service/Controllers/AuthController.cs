@@ -62,6 +62,20 @@ namespace identity_service.Controllers
             return Ok(result);
         }
 
+        [HttpPost("login-ldap")]
+        public async Task<IActionResult> LoginLdap(LoginLdapDto dto)
+        {
+            var device = Request.Headers["User-Agent"].ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            var result = await _authService.LoginLdapAsync(dto, device, ip);
+
+            if (!result.IsSuccess)
+                return Unauthorized(result);
+                
+            return Ok(result);
+        }
+
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("token-for-system")]
         public async Task<IActionResult> TokenForSystem([FromBody] SystemTokenRequestDto dto)
