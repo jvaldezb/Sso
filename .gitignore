@@ -36,3 +36,6 @@ packages/
 
 # Archivos de seeds o datos de prueba que NO deben ir a Git
 backend/migrations/V2__db_seed.sql
+
+# archivos de ldap de prueba
+*.ldif
