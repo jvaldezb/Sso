@@ -1,0 +1,50 @@
+flowchart TB
+
+    %% ===============================
+    %% CATEGORÍA 0 – USUARIO TÉCNICO
+    %% ===============================
+    subgraph CAT0[CAT 0]
+        direction TB
+        H0[Usuario Técnico del SSO]
+
+        T0[Configuración inicial del SSO]
+        T1[Creación de Super Administradores del SSO]
+        T2[Recuperación administrativa del SSO]
+        T3[Uso restringido y excepcional]
+
+        H0 --> T0
+        H0 --> T1
+        H0 --> T2
+        H0 --> T3
+    end
+
+    %% ===============================
+    %% CATEGORÍA 1 – SUPER ADMIN SSO
+    %% ===============================
+    subgraph CAT1[CAT 1]
+        direction TB
+        H1[Super Administradores del SSO]
+
+        A1[Administrar sistemas registrados]
+        A2[Administrar usuarios globales]
+        A3[Administrar roles globales]
+        A4[Supervisar operación del SSO]
+        A5[Designar administradores de sistemas]
+
+        H1 --> A1
+        H1 --> A2
+        H1 --> A3
+        H1 --> A4
+        H1 --> A5
+    end
+
+    %% ===============================
+    %% RELACIÓN DE DESIGNACIÓN
+    %% ===============================
+    T1 -.->|designa| H1
+
+    %% ===============================
+    %% ESTILOS
+    %% ===============================
+    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
+    class H0,H1 header;

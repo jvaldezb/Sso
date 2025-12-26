@@ -1,0 +1,68 @@
+flowchart TB
+
+    %% ===============================
+    %% IDENTIDAD GLOBAL
+    %% ===============================
+    subgraph ID[Identidad en el SSO]
+        direction TB
+        U[Usuario Global]
+        R0[Rol Global SSO]
+
+        U --> R0
+    end
+
+    %% ===============================
+    %% ROLES GLOBALES
+    %% ===============================
+    subgraph RG[Roles Globales del SSO]
+        direction TB
+        G1[SSO_SUPER_ADMIN]
+        G2[SSO_ADMIN]
+        G3[SSO_AUDITOR]
+
+        R0 --> G1
+        R0 --> G2
+        R0 --> G3
+    end
+
+    %% ===============================
+    %% SISTEMAS INTEGRADOS
+    %% ===============================
+    subgraph SYS[Sistemas Integrados]
+        direction TB
+        S1[PAT]
+        S2[SISR]
+        S3[Otros Sistemas]
+    end
+
+    %% ===============================
+    %% ROLES POR SISTEMA
+    %% ===============================
+    subgraph RS[Roles por Sistema]
+        direction TB
+        P1[PAT_ADMIN]
+        P2[PAT_USER]
+
+        S1 --> P1
+        S1 --> P2
+    end
+
+    %% ===============================
+    %% ASIGNACIÓN DE ROLES
+    %% ===============================
+    U -.->|asignado a| S1
+    U -.->|asignado a| S2
+
+    U -.->|tiene| G1
+    U -.->|tiene| P1
+
+    %% ===============================
+    %% ESTILOS
+    %% ===============================
+    classDef identity fill:#dfe6e9,stroke:#2d3436,stroke-width:2px;
+    classDef global fill:#ffcccc,stroke:#c0392b,stroke-width:2px;
+    classDef system fill:#ffe9b3,stroke:#e67e22,stroke-width:2px;
+
+    class U identity
+    class G1,G2,G3 global
+    class P1,P2 system

@@ -1,0 +1,61 @@
+flowchart TB
+
+    %% ===============================
+    %% CATEGORÍA 1 – SUPER ADMIN SSO
+    %% ===============================
+    subgraph CAT1[CAT 1]
+        direction TB
+        H1[Super Administrador del SSO]
+
+        S1[Registrar sistemas en el SSO]
+        S2[Designar administradores de sistemas]
+
+        H1 --> S1
+        H1 --> S2
+    end
+
+    %% ===============================
+    %% CATEGORÍA 2 – ADMIN SISTEMA
+    %% ===============================
+    subgraph CAT2[CAT 2]
+        direction TB
+        H2[Administrador de Sistema]
+
+        A1[Administrar usuarios de su sistema]
+        A2[Asignar roles del sistema]
+        A3[Acceso parcial al portal SSO]
+        A4[Operación del sistema]
+
+        H2 --> A1
+        H2 --> A2
+        H2 --> A3
+        H2 --> A4
+    end
+
+    %% ===============================
+    %% CATEGORÍA 3 – USUARIO FINAL
+    %% ===============================
+    subgraph CAT3[CAT 3]
+        direction TB
+        H3[Usuario del Sistema]
+
+        U1[Autenticarse mediante SSO]
+        U2[Acceder a sistemas autorizados]
+        U3[Uso funcional del sistema]
+
+        H3 --> U1
+        H3 --> U2
+        H3 --> U3
+    end
+
+    %% ===============================
+    %% RELACIONES DE GESTIÓN
+    %% ===============================
+    S2 -.->|designa| H2
+    H2 -.->|gestiona| H3
+
+    %% ===============================
+    %% ESTILOS
+    %% ===============================
+    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
+    class H1,H2,H3 header;

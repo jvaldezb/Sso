@@ -1,0 +1,38 @@
+flowchart TD
+    A[Inicio: Incidente o Evento Crítico] --> B{¿Existe al menos un\nSSO Super Admin activo?}
+
+    B -- Sí --> C[Gestionar incidente\ncon Super Admin]
+    C --> Z[Fin]
+
+    B -- No --> D[Declarar Situación de Contingencia]
+
+    D --> E[Autoridad de TI evalúa\nimpacto y criticidad]
+
+    E --> F{¿Contingencia aprobada?}
+
+    F -- No --> G[Escalar a nivel directivo\n/ Comité de TI]
+    G --> Z
+
+    F -- Sí --> H[Habilitar Usuario Técnico del SSO]
+
+    H --> I[Registrar motivo,\nfecha y responsable]
+
+    I --> J[Acciones permitidas en contingencia]
+
+    J --> J1[Crear / Reactivar\nSSO Super Admin]
+    J --> J2[Restaurar roles\ny asignaciones]
+    J --> J3[Corregir configuración\ncrítica del SSO]
+
+    J1 --> K[Validar existencia de\nSuper Admin activo]
+    J2 --> K
+    J3 --> K
+
+    K --> L{¿Sistema estabilizado?}
+
+    L -- No --> J
+
+    L -- Sí --> M[Deshabilitar Usuario Técnico]
+
+    M --> N[Registrar cierre de contingencia]
+
+    N --> Z[Fin]

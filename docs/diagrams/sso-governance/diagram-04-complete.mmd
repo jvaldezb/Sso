@@ -1,0 +1,107 @@
+flowchart LR
+
+    %% ===============================
+    %% CATEGORÍA 0 – USUARIO TÉCNICO
+    %% ===============================
+    subgraph CAT0[CAT 0]
+        direction TB
+        H0[Categoría 0 - Usuario Técnico del SSO]
+
+        T0[Usuario Técnico del SSO]
+        T1[Configuración inicial del SSO]
+        T2[Designar Super Administradores del SSO]
+        T3[Recuperación administrativa del SSO]
+        T4[Uso restringido y excepcional]
+
+        H0 --> T0
+        T0 --> T1
+        T0 --> T2
+        T0 --> T3
+        T0 --> T4
+    end
+
+    %% ===============================
+    %% CATEGORÍA 1 – SUPER ADMIN SSO
+    %% ===============================
+    subgraph CAT1[CAT 1]
+        direction TB
+        H1[Categoría 1 - Super Administradores del SSO]
+
+        SA[Super Admin SSO]
+
+        A1[Administrar sistemas registrados]
+        A2[Administrar usuarios globales]
+        A3[Administrar roles globales]
+        A4[Supervisar operación del SSO]
+        A5[Designar administradores de sistemas]
+
+        H1 --> SA
+        SA --> A1
+        SA --> A2
+        SA --> A3
+        SA --> A4
+        SA --> A5
+    end
+
+    %% ===============================
+    %% CATEGORÍA 2 – ADMIN SISTEMA
+    %% ===============================
+    subgraph CAT2[CAT 2]
+        direction TB
+        H2[Categoría 2 - Administrador de Sistema]
+
+        AS[Administrador de Sistema]
+
+        B1[Administrar usuarios de su sistema]
+        B2[Asignar roles de su sistema]
+        B3[Acceso parcial al portal SSO]
+        B4[Operación del sistema asignado]
+
+        H2 --> AS
+        AS --> B1
+        AS --> B2
+        AS --> B3
+        AS --> B4
+    end
+
+    %% ===============================
+    %% CATEGORÍA 3 – USUARIO FINAL
+    %% ===============================
+    subgraph CAT3[CAT 3]
+        direction TB
+        H3[Categoría 3 - Usuario de Sistemas]
+
+        U[Usuario]
+
+        C1[Autenticación mediante SSO]
+        C2[Acceso a sistemas autorizados]
+        C3[Uso funcional del sistema]
+
+        H3 --> U
+        U --> C1
+        U --> C2
+        U --> C3
+    end
+
+    %% ===============================
+    %% RELACIONES DE DESIGNACIÓN
+    %% ===============================
+    T2 -.->|designa| SA
+    SA -.->|designa| AS
+    AS -.->|gestiona| U
+
+    %% ===============================
+    %% ESTILOS
+    %% ===============================
+    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
+    class H0,H1,H2,H3 header;
+
+    classDef tecnico fill:#dfe6e9,stroke:#2d3436,stroke-width:2px,font-weight:bold;
+    classDef super fill:#ffcccc,stroke:#c0392b,stroke-width:2px;
+    classDef admin fill:#ffe9b3,stroke:#e67e22,stroke-width:2px;
+    classDef user fill:#d5ffd9,stroke:#27ae60,stroke-width:2px;
+
+    class T0 tecnico
+    class SA super
+    class AS admin
+    class U user
