@@ -1,9 +1,17 @@
 # Modelo de Gobernanza, Roles y Accesos del Sistema de Autenticación Única (SSO)
 
-El presente apartado describe el modelo de gobernanza, administración de roles y control de accesos del Sistema de Autenticación Única (SSO), así como su relación con los sistemas integrados.  
-La explicación se apoya en tres diagramas conceptuales elaborados en lenguaje Mermaid (`.mmd`), los cuales permiten comprender de manera progresiva el funcionamiento del SSO desde su arranque hasta la operación diaria.
+El presente documento describe el **modelo de gobernanza, administración de roles y control de accesos** del Sistema de Autenticación Única (SSO), así como su relación con los sistemas integrados.
 
-## Diagrama completo
+El modelo se apoya en un conjunto de **diagramas conceptuales elaborados en lenguaje Mermaid (`.mmd`)**, los cuales permiten comprender de manera progresiva:
+
+- El arranque institucional del SSO.
+- La administración de sistemas integrados.
+- La separación entre roles globales y roles por sistema.
+- El mecanismo de contingencia para garantizar la continuidad operativa.
+
+## Diagrama general del modelo
+**Referencia:** *Diagrama 1 – Vista General del Modelo de Gobernanza del SSO*
+El siguiente diagrama presenta una **vista integral del modelo**, incluyendo todas las categorías de usuarios, sus responsabilidades y las relaciones de designación y gestión.
 ```mermaid
 flowchart LR
 
@@ -118,7 +126,7 @@ flowchart LR
 
 ## 1. Gobernanza y Arranque del Sistema de Autenticación Única
 
-**Referencia:** *Diagrama 1 – Gobernanza del SSO (Arranque y Administración)*
+**Referencia:** *Diagrama 2 – Gobernanza del SSO (Arranque y Administración)*
 ```mermaid
 flowchart TB
 
@@ -210,7 +218,7 @@ El diagrama enfatiza que el Usuario Técnico **designa** a los Super Administrad
 
 ## 2. Administración y Uso de los Sistemas Integrados
 
-**Referencia:** *Diagrama 2 – Administración y Uso de los Sistemas Integrados*
+**Referencia:** *Diagrama 3 – Administración y Uso de los Sistemas Integrados*
 ```mermaid
 flowchart TB
 
@@ -314,7 +322,7 @@ El diagrama deja explícito que el Administrador de Sistema **gestiona** usuario
 
 ## 3. Separación entre Roles Globales y Roles por Sistema
 
-**Referencia:** *Diagrama 3 – Separación de Roles Globales y Roles por Sistema*
+**Referencia:** *Diagrama 4 – Separación de Roles Globales y Roles por Sistema*
 ```mermaid
 flowchart TB
 
@@ -465,6 +473,7 @@ El Sistema de Autenticación Única (SSO) contempla un mecanismo formal de conti
 ---
 
 ### 5.3 Flujo de activación y cierre de contingencia
+**Referencia:** *Diagrama 5 – Flujo de activación y cierre de contingencia*
 
 ```mermaid
 flowchart TD
@@ -515,13 +524,13 @@ La contingencia se considera cerrada cuando:
 
 ## 6. Consideraciones Finales
 
-El uso de los tres diagramas permite una comprensión progresiva del modelo:
+El uso de diagramas progresivos permite una comprensión clara del modelo:
 
-0. **Diagrama 0:** Diagrama completo (Diagramas 1, 2 y 3 en uno).
-1. **Diagrama 1:** explica quién gobierna el SSO y cómo se inicia.
-2. **Diagrama 2:** muestra cómo se administran y utilizan los sistemas integrados.
-3. **Diagrama 3:** delimita claramente los roles globales y los roles por sistema.
-4. **Diagrama 4:** Contigencias.
+1. Vista general del ecosistema.
+2. Gobernanza y arranque del SSO.
+3. Administración de sistemas integrados.
+4. Separación de roles.
+5. Gestión de contingencias.
 
 Este enfoque modular facilita la inclusión del modelo en documentos normativos, manuales técnicos y procesos de auditoría institucional.
 
