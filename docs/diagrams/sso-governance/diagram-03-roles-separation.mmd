@@ -57,12 +57,15 @@ flowchart TB
     U -.->|tiene| P1
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE
     %% ===============================
-    classDef identity fill:#dfe6e9,stroke:#2d3436,stroke-width:2px;
-    classDef global fill:#ffcccc,stroke:#c0392b,stroke-width:2px;
-    classDef system fill:#ffe9b3,stroke:#e67e22,stroke-width:2px;
+    classDef identity fill:#2c3e50,stroke:#95a5a6,stroke-width:2px,color:#ecf0f1,font-weight:bold;
+    classDef global fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+    classDef system fill:#3a2f1a,stroke:#f39c12,stroke-width:2px,color:#ecf0f1;
+    classDef roleSystem fill:#1f3a2e,stroke:#2ecc71,stroke-width:2px,color:#ecf0f1;
 
     class U identity
+    class R0 identity
     class G1,G2,G3 global
-    class P1,P2 system
+    class S1,S2,S3 system
+    class P1,P2 roleSystem

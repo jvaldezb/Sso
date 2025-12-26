@@ -55,7 +55,15 @@ flowchart TB
     H2 -.->|gestiona| H3
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE (CON BORDES)
     %% ===============================
-    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
-    class H1,H2,H3 header;
+    classDef header fill:#1e272e,stroke:#7f8c8d,stroke-width:1.5px,color:#ecf0f1,font-weight:bold;
+
+    classDef super fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+    classDef admin fill:#3a2f1a,stroke:#f39c12,stroke-width:2px,color:#ecf0f1;
+    classDef user fill:#1f3a2e,stroke:#2ecc71,stroke-width:2px,color:#ecf0f1;
+
+    class H1,H2,H3 header
+    class CAT1 super
+    class CAT2 admin
+    class CAT3 user

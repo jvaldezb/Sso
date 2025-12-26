@@ -44,7 +44,13 @@ flowchart TB
     T1 -.->|designa| H1
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE (CON BORDES)
     %% ===============================
-    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
-    class H0,H1 header;
+    classDef header fill:#1e272e,stroke:#7f8c8d,stroke-width:1.5px,color:#ecf0f1,font-weight:bold;
+
+    classDef tecnico fill:#2c3e50,stroke:#95a5a6,stroke-width:2px,color:#ecf0f1;
+    classDef super fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+
+    class H0,H1 header
+    class CAT0 tecnico
+    class CAT1 super

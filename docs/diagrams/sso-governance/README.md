@@ -98,15 +98,15 @@ flowchart LR
     AS -.->|gestiona| U
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE
     %% ===============================
-    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
+    classDef header fill:transparent,stroke:transparent,color:#bdc3c7,font-weight:bold;
     class H0,H1,H2,H3 header;
 
-    classDef tecnico fill:#dfe6e9,stroke:#2d3436,stroke-width:2px,font-weight:bold;
-    classDef super fill:#ffcccc,stroke:#c0392b,stroke-width:2px;
-    classDef admin fill:#ffe9b3,stroke:#e67e22,stroke-width:2px;
-    classDef user fill:#d5ffd9,stroke:#27ae60,stroke-width:2px;
+    classDef tecnico fill:#2c3e50,stroke:#95a5a6,stroke-width:2px,color:#ecf0f1,font-weight:bold;
+    classDef super fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+    classDef admin fill:#3a2f1a,stroke:#f39c12,stroke-width:2px,color:#ecf0f1;
+    classDef user fill:#1f3a2e,stroke:#2ecc71,stroke-width:2px,color:#ecf0f1;
 
     class T0 tecnico
     class SA super
@@ -166,10 +166,16 @@ flowchart TB
     T1 -.->|designa| H1
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE (CON BORDES)
     %% ===============================
-    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
-    class H0,H1 header;
+    classDef header fill:#1e272e,stroke:#7f8c8d,stroke-width:1.5px,color:#ecf0f1,font-weight:bold;
+
+    classDef tecnico fill:#2c3e50,stroke:#95a5a6,stroke-width:2px,color:#ecf0f1;
+    classDef super fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+
+    class H0,H1 header
+    class CAT0 tecnico
+    class CAT1 super
 
 ```
 
@@ -263,10 +269,19 @@ flowchart TB
     H2 -.->|gestiona| H3
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE (CON BORDES)
     %% ===============================
-    classDef header fill:#ffffff,stroke:#ffffff,color:#2d3436,font-weight:bold;
-    class H1,H2,H3 header;
+    classDef header fill:#1e272e,stroke:#7f8c8d,stroke-width:1.5px,color:#ecf0f1,font-weight:bold;
+
+    classDef super fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+    classDef admin fill:#3a2f1a,stroke:#f39c12,stroke-width:2px,color:#ecf0f1;
+    classDef user fill:#1f3a2e,stroke:#2ecc71,stroke-width:2px,color:#ecf0f1;
+
+    class H1,H2,H3 header
+    class CAT1 super
+    class CAT2 admin
+    class CAT3 user
+
 ```
 
 El segundo diagrama explica cómo el SSO se relaciona con los sistemas integrados (como PAT, SISR u otros), una vez que la plataforma ya se encuentra en funcionamiento.
@@ -360,15 +375,18 @@ flowchart TB
     U -.->|tiene| P1
 
     %% ===============================
-    %% ESTILOS
+    %% ESTILOS DARK MODE
     %% ===============================
-    classDef identity fill:#dfe6e9,stroke:#2d3436,stroke-width:2px;
-    classDef global fill:#ffcccc,stroke:#c0392b,stroke-width:2px;
-    classDef system fill:#ffe9b3,stroke:#e67e22,stroke-width:2px;
+    classDef identity fill:#2c3e50,stroke:#95a5a6,stroke-width:2px,color:#ecf0f1,font-weight:bold;
+    classDef global fill:#3b1f1f,stroke:#e74c3c,stroke-width:2px,color:#ecf0f1;
+    classDef system fill:#3a2f1a,stroke:#f39c12,stroke-width:2px,color:#ecf0f1;
+    classDef roleSystem fill:#1f3a2e,stroke:#2ecc71,stroke-width:2px,color:#ecf0f1;
 
     class U identity
+    class R0 identity
     class G1,G2,G3 global
-    class P1,P2 system
+    class S1,S2,S3 system
+    class P1,P2 roleSystem
 ```
 
 El tercer diagrama clarifica uno de los principios fundamentales del modelo: la **separación de responsabilidades entre el SSO y los sistemas integrados**.
@@ -421,17 +439,89 @@ Este principio garantiza:
 - Continuidad institucional ante cambios de personal.
 
 ---
-## 5. Diagrama consolidado
 
+## 5. Gestión de Contingencias del Sistema de Autenticación Única (SSO)
+
+El Sistema de Autenticación Única (SSO) contempla un mecanismo formal de contingencia destinado a garantizar la continuidad operativa institucional ante situaciones excepcionales que impidan la administración normal del sistema.
+
+---
+
+### 5.1 Escenarios que habilitan una contingencia
+
+- Inexistencia de SSO Super Administradores activos.
+- Incidentes críticos de seguridad.
+- Errores de configuración que impidan la administración del SSO.
+- Eventos extraordinarios que comprometan la gobernabilidad del sistema.
+
+---
+
+### 5.2 Principios del Usuario Técnico del SSO
+
+- Cuenta institucional excepcional.
+- No representa a una persona natural.
+- Uso temporal, justificado y auditado.
+- Debe deshabilitarse tras superar la contingencia.
+
+---
+
+### 5.3 Flujo de activación y cierre de contingencia
+
+```mermaid
+flowchart TD
+    A[Inicio: Incidente o Evento Crítico] --> B{¿Existe al menos un\nSSO Super Admin activo?}
+    B -- Sí --> C[Gestionar incidente\ncon Super Admin]
+    C --> Z[Fin]
+    B -- No --> D[Declarar Situación de Contingencia]
+    D --> E[Autoridad de TI evalúa\nimpacto y criticidad]
+    E --> F{¿Contingencia aprobada?}
+    F -- No --> G[Escalar a nivel directivo]
+    G --> Z
+    F -- Sí --> H[Habilitar Usuario Técnico del SSO]
+    H --> I[Registrar motivo y responsable]
+    I --> J[Acciones permitidas]
+    J --> J1[Crear o reactivar Super Admin]
+    J --> J2[Restaurar roles]
+    J --> J3[Corregir configuración]
+    J1 --> K[Validar Super Admin activo]
+    J2 --> K
+    J3 --> K
+    K --> L{¿Sistema estabilizado?}
+    L -- No --> J
+    L -- Sí --> M[Deshabilitar Usuario Técnico]
+    M --> N[Registrar cierre]
+    N --> Z
+```
+
+---
+
+### 5.4 Acciones permitidas
+
+- Crear o reactivar SSO Super Administradores.
+- Restaurar roles y asignaciones.
+- Corregir configuraciones críticas.
+
+---
+
+### 5.5 Cierre de contingencia
+
+La contingencia se considera cerrada cuando:
+- Existe al menos un Super Admin activo.
+- El SSO opera con normalidad.
+- El Usuario Técnico ha sido deshabilitado.
+- Se ha registrado el cierre para auditoría.
+
+
+---
 
 ## 6. Consideraciones Finales
 
 El uso de los tres diagramas permite una comprensión progresiva del modelo:
 
+0. **Diagrama 0:** Diagrama completo (Diagramas 1, 2 y 3 en uno).
 1. **Diagrama 1:** explica quién gobierna el SSO y cómo se inicia.
 2. **Diagrama 2:** muestra cómo se administran y utilizan los sistemas integrados.
 3. **Diagrama 3:** delimita claramente los roles globales y los roles por sistema.
-4. 
+4. **Diagrama 4:** Contigencias.
 
 Este enfoque modular facilita la inclusión del modelo en documentos normativos, manuales técnicos y procesos de auditoría institucional.
 
