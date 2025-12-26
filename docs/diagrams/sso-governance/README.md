@@ -187,7 +187,7 @@ flowchart TB
 
 ```
 
-El primer diagrama describe el proceso de **arranque institucional del SSO** y los roles responsables de su administración a nivel global.
+El segundo diagrama describe el proceso de **arranque institucional del SSO** y los roles responsables de su administración a nivel global.
 
 ### Usuario Técnico del SSO (Categoría 0)
 
@@ -292,7 +292,7 @@ flowchart TB
 
 ```
 
-El segundo diagrama explica cómo el SSO se relaciona con los sistemas integrados (como PAT, SISR u otros), una vez que la plataforma ya se encuentra en funcionamiento.
+El tercer diagrama explica cómo el SSO se relaciona con los sistemas integrados (como PAT, SISR u otros), una vez que la plataforma ya se encuentra en funcionamiento.
 
 ### Administrador de Sistema (Categoría 2)
 
@@ -397,7 +397,7 @@ flowchart TB
     class P1,P2 roleSystem
 ```
 
-El tercer diagrama clarifica uno de los principios fundamentales del modelo: la **separación de responsabilidades entre el SSO y los sistemas integrados**.
+El cuarto diagrama clarifica uno de los principios fundamentales del modelo: la **separación de responsabilidades entre el SSO y los sistemas integrados**.
 
 ### Usuario Global
 
