@@ -24,7 +24,7 @@ private readonly IRefreshTokenService _refreshTokenService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IMapper _mapper;
     private readonly ILdapAuthenticationService _ldapAuthService;
-    private readonly IConfiguration _configuration;
+    private readonly IProviderConfigurationService _providerConfigService;
 
     public AuthService(
         IRefreshTokenService refreshTokenService,
@@ -35,7 +35,7 @@ private readonly IRefreshTokenService _refreshTokenService;
         UserManager<ApplicationUser> userManager,
         IMapper mapper,
         ILdapAuthenticationService ldapAuthService,
-        IConfiguration configuration)
+        IProviderConfigurationService providerConfigService)
     {
         _refreshTokenService = refreshTokenService;
         _tokenGenerator = tokenGenerator;
@@ -45,7 +45,7 @@ private readonly IRefreshTokenService _refreshTokenService;
         _userManager = userManager;
         _mapper = mapper;
         _ldapAuthService = ldapAuthService;
-        _configuration = configuration;
+        _providerConfigService = providerConfigService;
     }
 
     public async Task<Result<AuthResponseSsoDto>> LoginDocumentAsync(LoginDocumentDto dto, string device, string? ip)
@@ -55,20 +55,91 @@ private readonly IRefreshTokenService _refreshTokenService;
         if (ssoSystem == null)
             return Result<AuthResponseSsoDto>.Failure("SSO Central system not configured.");        
 
-        // 1. Buscar usuario
+        // 1. Intentar autenticación LOCAL primero
         var user = await _userManager.Users
             .FirstOrDefaultAsync(u =>
                 u.DocumentType == dto.DocumentType &&
                 u.DocumentNumber == dto.DocumentNumber);
 
-        if (user == null)
-            return Result<AuthResponseSsoDto>.Failure("Invalid credentials");
+        bool authenticatedLocally = false;
+        
+        if (user != null)
+        {
+            var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+            if (passwordValid)
+            {
+                authenticatedLocally = true;
+            }
+        }
 
-        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
-        if (!passwordValid)
-            return Result<AuthResponseSsoDto>.Failure("Invalid credentials");
+        // 2. Si falló la autenticación local, intentar LDAP (si está habilitado)
+        if (!authenticatedLocally)
+        {
+            var ldapConfigResult = await _providerConfigService.GetLdapConfigurationAsync();
+            
+            if (ldapConfigResult.IsSuccess && ldapConfigResult.Data != null)
+            {
+                var ldapConfig = ldapConfigResult.Data.Value;
+                
+                // Intentar autenticación LDAP usando DocumentNumber como username
+                var ldapResult = await _ldapAuthService.AuthenticateAsync(
+                    dto.DocumentNumber, 
+                    dto.Password, 
+                    ldapConfig.Server,
+                    ldapConfig.Port,
+                    ldapConfig.AdminDn,
+                    ldapConfig.AdminPassword,
+                    ldapConfig.Settings);
+                
+                if (ldapResult.IsSuccess && ldapResult.Data != null)
+                {
+                    var ldapUserInfo = ldapResult.Data;
+                    
+                    // Usuario autenticado por LDAP - crear o actualizar en BD local
+                    if (user == null)
+                    {
+                        // Crear nuevo usuario
+                        user = new ApplicationUser
+                        {
+                            UserName = dto.DocumentNumber,
+                            Email = ldapUserInfo.Email,
+                            EmailConfirmed = true,
+                            FullName = ldapUserInfo.DisplayName,
+                            IsEnabled = true,
+                            DocumentType = dto.DocumentType,
+                            DocumentNumber = dto.DocumentNumber,
+                            DateCreate = DateTime.UtcNow,
+                            UserCreate = "LDAP_SYSTEM"
+                        };
 
-        // 2. Encontrar sistemas asignados por roles
+                        var createResult = await _userManager.CreateAsync(user);
+                        if (!createResult.Succeeded)
+                        {
+                            return Result<AuthResponseSsoDto>.Failure($"Failed to create LDAP user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+                        }
+                    }
+                    else
+                    {
+                        // Actualizar usuario existente con info de LDAP
+                        user.Email = ldapUserInfo.Email;
+                        user.FullName = ldapUserInfo.DisplayName;
+                        user.DateUpdate = DateTime.UtcNow;
+                        user.UserUpdate = "LDAP_SYSTEM";
+                        await _userManager.UpdateAsync(user);
+                    }
+                    
+                    authenticatedLocally = true; // Marcar como autenticado exitosamente
+                }
+            }
+            
+            // Si después de intentar LDAP no está autenticado, retornar error
+            if (!authenticatedLocally)
+            {
+                return Result<AuthResponseSsoDto>.Failure("Invalid credentials");
+            }
+        }
+
+        // 3. Usuario autenticado (local o LDAP) - continuar con el flujo normal        
         var userRoles = await _userManager.GetRolesAsync(user);
 
         var roles = await _roleManager.Roles
@@ -89,7 +160,7 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         var jti = Guid.NewGuid().ToString();
 
-        // 3. Registrar sesión
+        // 4. Registrar sesión
         var session = new UserSession
         {
             UserId = user.Id,
@@ -106,7 +177,7 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         await _userSessionRepository.AddAsync(session);
 
-        // 4. Generar access token Fase A
+        // 5. Generar access token Fase A
         var (accessToken, expires) = _tokenGenerator.GenerateCentralToken(user, session, systems, "global", 60);         
 
         var menuDtos = new List<MenuDto>();
@@ -122,11 +193,11 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         var accessTokenexpiresAt = DateTimeOffset.UtcNow.AddMinutes(60);                 
 
-        // 5. Generar el refresh token (nuevo)
+        // 6. Generar el refresh token (nuevo)
         var refreshToken = _refreshTokenService.GenerateRefreshToken(ip, device);
         await _refreshTokenService.SaveRefreshTokenAsync(user, refreshToken);
 
-        // 6. Roles para todos los sistemas
+        // 7. Roles para todos los sistemas
         var ssoRoles = roles            
             .Select(r => new AuthRoleDto
             {
@@ -135,7 +206,7 @@ private readonly IRefreshTokenService _refreshTokenService;
             })
             .ToList();
 
-        // 7. Retornar access + refresh token
+        // 8. Retornar access + refresh token
         var result = new AuthResponseSsoDto
         {
             UserId = user.Id,
@@ -167,11 +238,13 @@ private readonly IRefreshTokenService _refreshTokenService;
     public async Task<Result<AuthResponseSsoDto>> LoginLdapAsync(LoginLdapDto dto, string device, string? ip)
     {
         // Verificar si LDAP está habilitado
-        var ldapEnabled = bool.Parse(_configuration["LdapSettings:Enabled"] ?? "false");
-        if (!ldapEnabled)
+        var ldapConfigResult = await _providerConfigService.GetLdapConfigurationAsync();
+        if (!ldapConfigResult.IsSuccess || ldapConfigResult.Data == null)
         {
             return Result<AuthResponseSsoDto>.Failure("LDAP authentication is not enabled");
         }
+
+        var ldapConfig = ldapConfigResult.Data.Value;
 
         // Validar que el sistema SSO Central esté configurado
         var ssoSystem = await _context.SystemRegistries.FirstOrDefaultAsync(sr => sr.IsCentralAdmin == true);
@@ -179,7 +252,14 @@ private readonly IRefreshTokenService _refreshTokenService;
             return Result<AuthResponseSsoDto>.Failure("SSO Central system not configured.");
 
         // 1. Autenticar contra LDAP
-        var ldapResult = await _ldapAuthService.AuthenticateAsync(dto.Username, dto.Password);
+        var ldapResult = await _ldapAuthService.AuthenticateAsync(
+            dto.Username, 
+            dto.Password,
+            ldapConfig.Server,
+            ldapConfig.Port,
+            ldapConfig.AdminDn,
+            ldapConfig.AdminPassword,
+            ldapConfig.Settings);
         if (!ldapResult.IsSuccess || ldapResult.Data == null)
         {
             return Result<AuthResponseSsoDto>.Failure(ldapResult.ErrorMessage ?? "LDAP authentication failed");
@@ -200,7 +280,7 @@ private readonly IRefreshTokenService _refreshTokenService;
                 EmailConfirmed = true,
                 FullName = ldapUserInfo.DisplayName,
                 IsEnabled = true,
-                DocumentType = "LDAP",
+                DocumentType = "DNI",
                 DocumentNumber = dto.Username,
                 DateCreate = DateTime.UtcNow,
                 UserCreate = "LDAP_SYSTEM"
@@ -330,7 +410,7 @@ private readonly IRefreshTokenService _refreshTokenService;
         if (system.ApiKey != dto.ApiKey)
             return Result<AuthResponseDto>.Failure("ApiKey no válida para este sistema.");
 
-        // 2. Validar Usuario
+        // 2. Validar que el usuario EXISTA (no se crean usuarios en este endpoint)
         var user = await _userManager.Users
             .FirstOrDefaultAsync(u =>
                 u.DocumentType == dto.DocumentType &&
@@ -339,11 +419,57 @@ private readonly IRefreshTokenService _refreshTokenService;
         if (user == null)
             return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
 
-        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
-        if (!passwordValid)
-            return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
+        bool authenticatedLocally = false;
 
-        // 3. Roles para este sistema
+        // 3. Intentar autenticación LOCAL primero
+        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+        if (passwordValid)
+        {
+            authenticatedLocally = true;
+        }
+
+        // 4. Si falló la autenticación local, intentar LDAP (si está habilitado)
+        if (!authenticatedLocally)
+        {
+            var ldapConfigResult = await _providerConfigService.GetLdapConfigurationAsync();
+            
+            if (ldapConfigResult.IsSuccess && ldapConfigResult.Data != null)
+            {
+                var ldapConfig = ldapConfigResult.Data.Value;
+                
+                // Intentar autenticación LDAP usando DocumentNumber como username
+                var ldapResult = await _ldapAuthService.AuthenticateAsync(
+                    dto.DocumentNumber, 
+                    dto.Password,
+                    ldapConfig.Server,
+                    ldapConfig.Port,
+                    ldapConfig.AdminDn,
+                    ldapConfig.AdminPassword,
+                    ldapConfig.Settings);
+                
+                if (ldapResult.IsSuccess && ldapResult.Data != null)
+                {
+                    var ldapUserInfo = ldapResult.Data;
+                    
+                    // Usuario autenticado por LDAP - solo actualizar info (NO crear)
+                    user.Email = ldapUserInfo.Email;
+                    user.FullName = ldapUserInfo.DisplayName;
+                    user.DateUpdate = DateTime.UtcNow;
+                    user.UserUpdate = "LDAP_SYSTEM";
+                    await _userManager.UpdateAsync(user);
+                    
+                    authenticatedLocally = true; // Marcar como autenticado exitosamente
+                }
+            }
+            
+            // Si después de intentar LDAP no está autenticado, retornar error
+            if (!authenticatedLocally)
+            {
+                return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
+            }
+        }
+
+        // 5. Usuario autenticado (local o LDAP) - validar que tenga roles para este sistema
         var roles = await _roleManager.Roles
             .Where(r => r.SystemId == system.Id)
             .Where(r => r.Name != null)
@@ -354,6 +480,12 @@ private readonly IRefreshTokenService _refreshTokenService;
             .Where(r => userRoles.Contains(r.Name!))
             .Select(r => r.Name!)
             .ToList();
+
+        // Validar que el usuario tenga al menos un rol asignado para este sistema
+        if (!roleCodesForSystem.Any())
+        {
+            return Result<AuthResponseDto>.Failure("Usuario no tiene permisos para acceder a este sistema.");
+        }
 
         var jti = Guid.NewGuid().ToString();
         var expireAt = DateTimeOffset.UtcNow.AddMinutes(10);    
@@ -375,18 +507,18 @@ private readonly IRefreshTokenService _refreshTokenService;
 
         await _userSessionRepository.AddAsync(session);    
 
-        // 4. Generar AccessToken del Sistema (Fase B)
+        // 7. Generar AccessToken del Sistema (Fase B)
         var (accessToken, accessExpires) =
             _tokenGenerator.GenerateSystemToken(user, session, roleCodesForSystem, system.SystemCode, "read", 10);
 
-        // 5. Crear RefreshToken
+        // 8. Crear RefreshToken
         var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(
             user, 
             ip, 
             device
         );        
 
-        // 7. Respuesta Final
+        // 9. Respuesta Final
         return Result<AuthResponseDto>.Success(new AuthResponseDto
         {
             UserId = user.Id,

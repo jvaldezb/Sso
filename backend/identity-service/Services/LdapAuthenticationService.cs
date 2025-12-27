@@ -1,51 +1,50 @@
 using System.DirectoryServices.Protocols;
 using System.Net;
 using identity_service.Dtos;
+using identity_service.Dtos.ProviderConfiguration;
 using identity_service.Services.Interfaces;
 
 namespace identity_service.Services;
 
 public class LdapAuthenticationService : ILdapAuthenticationService
 {
-    private readonly IConfiguration _configuration;
     private readonly ILogger<LdapAuthenticationService> _logger;
 
     public LdapAuthenticationService(
-        IConfiguration configuration,
         ILogger<LdapAuthenticationService> logger)
     {
-        _configuration = configuration;
         _logger = logger;
     }
 
-    public async Task<Result<LdapUserInfo>> AuthenticateAsync(string username, string password)
+    public async Task<Result<LdapUserInfo>> AuthenticateAsync(
+        string username, 
+        string password,
+        string server,
+        int port,
+        string? adminDn,
+        string? adminPassword,
+        LdapSettingsDto settings)
     {
         try
         {
-            var ldapServer = _configuration["LdapSettings:Server"];
-            var ldapPort = int.Parse(_configuration["LdapSettings:Port"] ?? "389");
-            var baseDn = _configuration["LdapSettings:BaseDn"];
-            var userSearchBase = _configuration["LdapSettings:UserSearchBase"];
-            var useSsl = bool.Parse(_configuration["LdapSettings:UseSsl"] ?? "false");
-            
             _logger.LogInformation("LDAP Configuration - Server: {Server}, Port: {Port}, BaseDn: {BaseDn}, UserSearchBase: {UserSearchBase}", 
-                ldapServer, ldapPort, baseDn, userSearchBase);
+                server, port, settings.BaseDn, settings.UserSearchBase);
             
-            if (string.IsNullOrWhiteSpace(ldapServer) || string.IsNullOrWhiteSpace(baseDn))
+            if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(settings.BaseDn))
             {
                 return Result<LdapUserInfo>.Failure("LDAP configuration is incomplete");
             }
 
             // Crear identificador del servidor LDAP
-            var ldapIdentifier = new LdapDirectoryIdentifier(ldapServer, ldapPort);
+            var ldapIdentifier = new LdapDirectoryIdentifier(server, port);
             
             // PASO 1: Autenticar al usuario
             using (var userConnection = new LdapConnection(ldapIdentifier))
             {
-                userConnection.Timeout = TimeSpan.FromSeconds(30);
+                userConnection.Timeout = TimeSpan.FromSeconds(settings.Timeout);
                 userConnection.SessionOptions.ProtocolVersion = 3;
                 
-                if (useSsl)
+                if (settings.UseSsl)
                 {
                     userConnection.SessionOptions.SecureSocketLayer = true;
                     userConnection.SessionOptions.VerifyServerCertificate = (conn, cert) => true;
@@ -53,7 +52,7 @@ public class LdapAuthenticationService : ILdapAuthenticationService
                 
                 userConnection.AuthType = AuthType.Basic;
 
-                var userDn = $"uid={username},{userSearchBase},{baseDn}";
+                var userDn = $"uid={username},{settings.UserSearchBase},{settings.BaseDn}";
                 
                 _logger.LogInformation("Attempting LDAP bind with DN: {UserDn}", userDn);
                 
@@ -78,10 +77,10 @@ public class LdapAuthenticationService : ILdapAuthenticationService
             // PASO 2: Buscar información del usuario con una conexión admin
             using (var adminConnection = new LdapConnection(ldapIdentifier))
             {
-                adminConnection.Timeout = TimeSpan.FromSeconds(30);
+                adminConnection.Timeout = TimeSpan.FromSeconds(settings.Timeout);
                 adminConnection.SessionOptions.ProtocolVersion = 3;
                 
-                if (useSsl)
+                if (settings.UseSsl)
                 {
                     adminConnection.SessionOptions.SecureSocketLayer = true;
                     adminConnection.SessionOptions.VerifyServerCertificate = (conn, cert) => true;
@@ -90,8 +89,20 @@ public class LdapAuthenticationService : ILdapAuthenticationService
                 adminConnection.AuthType = AuthType.Basic;
 
                 // Bind con admin para buscar información del usuario
-                var adminDn = $"cn=admin,{baseDn}";
-                var adminPassword = "admin"; // En producción, esto debe venir de configuración
+                
+                if (string.IsNullOrWhiteSpace(adminDn) || string.IsNullOrWhiteSpace(adminPassword))
+                {
+                    _logger.LogWarning("Admin credentials not configured, returning basic user info");
+                    return Result<LdapUserInfo>.Success(new LdapUserInfo
+                    {
+                        Username = username,
+                        Email = $"{username}@mycompany.com",
+                        DisplayName = username,
+                        GivenName = string.Empty,
+                        Surname = string.Empty,
+                        Groups = new List<string>()
+                    });
+                }
                 
                 try
                 {
@@ -114,7 +125,12 @@ public class LdapAuthenticationService : ILdapAuthenticationService
                 }
 
                 // Si llegamos aquí, la autenticación fue exitosa
-                var userInfo = await SearchUserInfoAsync(adminConnection, username, userSearchBase ?? "", baseDn);
+                var userInfo = await SearchUserInfoAsync(
+                    adminConnection, 
+                    username, 
+                    settings.UserSearchBase, 
+                    settings.BaseDn,
+                    settings.SearchFilter ?? "(uid={0})");
                 
                 if (userInfo == null)
                 {
@@ -145,14 +161,15 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         LdapConnection connection, 
         string username,
         string userSearchBase,
-        string baseDn)
+        string baseDn,
+        string searchFilterTemplate)
     {
         try
         {
             var searchBase = string.IsNullOrWhiteSpace(userSearchBase) 
                 ? baseDn 
                 : $"{userSearchBase},{baseDn}";
-            var searchFilter = $"(uid={username})";
+            var searchFilter = string.Format(searchFilterTemplate, username);
             
             _logger.LogInformation("Searching LDAP user - SearchBase: {SearchBase}, Filter: {Filter}", searchBase, searchFilter);
             
@@ -234,35 +251,5 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         }
         
         return values;
-    }
-
-    public async Task<bool> IsAvailableAsync()
-    {
-        try
-        {
-            var ldapServer = _configuration["LdapSettings:Server"];
-            var ldapPort = int.Parse(_configuration["LdapSettings:Port"] ?? "389");
-            
-            if (string.IsNullOrWhiteSpace(ldapServer))
-            {
-                return false;
-            }
-
-            var ldapIdentifier = new LdapDirectoryIdentifier(ldapServer, ldapPort);
-            using var connection = new LdapConnection(ldapIdentifier)
-            {
-                Timeout = TimeSpan.FromSeconds(5)
-            };
-            
-            // Intentar conexión simple
-            connection.Bind();
-            
-            return await Task.FromResult(true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "LDAP server is not available");
-            return false;
-        }
     }
 }

@@ -154,6 +154,7 @@ builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddScoped<IMenuRepository, MenuRepository>();
 builder.Services.AddScoped<ISystemRegistryRepository, SystemRegistryRepository>();
 builder.Services.AddScoped<IRoleMenuRepository, RoleMenuRepository>();
+builder.Services.AddScoped<IProviderConfigurationRepository, ProviderConfigurationRepository>();
 
 // Services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -169,6 +170,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExchangeTokenService, ExchangeTokenService>();
 builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
 builder.Services.AddScoped<ILdapAuthenticationService, LdapAuthenticationService>();
+builder.Services.AddScoped<IProviderConfigurationService, ProviderConfigurationService>();
 
 var app = builder.Build();
 

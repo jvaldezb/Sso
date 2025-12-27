@@ -1,4 +1,5 @@
 using identity_service.Dtos;
+using identity_service.Dtos.ProviderConfiguration;
 
 namespace identity_service.Services.Interfaces;
 
@@ -9,13 +10,20 @@ public interface ILdapAuthenticationService
     /// </summary>
     /// <param name="username">Usuario LDAP</param>
     /// <param name="password">Contraseña</param>
+    /// <param name="server">Servidor LDAP</param>
+    /// <param name="port">Puerto LDAP</param>
+    /// <param name="adminDn">DN del admin para búsqueda</param>
+    /// <param name="adminPassword">Contraseña del admin</param>
+    /// <param name="settings">Configuración específica de LDAP</param>
     /// <returns>Resultado con información del usuario LDAP si es exitoso</returns>
-    Task<Result<LdapUserInfo>> AuthenticateAsync(string username, string password);
-    
-    /// <summary>
-    /// Verifica si el servicio LDAP está disponible
-    /// </summary>
-    Task<bool> IsAvailableAsync();
+    Task<Result<LdapUserInfo>> AuthenticateAsync(
+        string username, 
+        string password,
+        string server,
+        int port,
+        string? adminDn,
+        string? adminPassword,
+        LdapSettingsDto settings);
 }
 
 public class LdapUserInfo
